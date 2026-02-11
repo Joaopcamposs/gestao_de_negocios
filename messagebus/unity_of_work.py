@@ -1,20 +1,18 @@
-"""Módulo do Unit of Work para gerenciamento de transações."""
+"""Módulo abstrato do Unit of Work para gerenciamento de transações.
+
+Este módulo faz parte do barramento de mensagens e não deve ter dependências
+de infraestrutura (banco de dados, ORM, etc.). A implementação concreta
+está em infra/database/unit_of_work.py.
+"""
 
 from __future__ import annotations
 
 from abc import ABC
-from collections.abc import Generator
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from collections.abc import Callable, Generator
+from enum import Enum
+from typing import Any
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from infra.database import default_async_sql_session_factory
-from infra.database.schema_handlers import create_full_schema_within_transaction
 from messagebus.entities import DomainRepository, UserBase, ViewRepository
-
-if TYPE_CHECKING:
-    from messagebus.domains import Domain
-    from messagebus.messagebus import Event
 
 
 class UnitOfWorkContextAlreadyOpen(Exception):
@@ -30,23 +28,30 @@ class UnitOfWorkWithProblem(Exception):
 
 
 class AbstractUnitOfWork(ABC):
-    """Interface abstrata do Unit of Work."""
+    """
+    Interface abstrata do Unit of Work.
+
+    Define o contrato para gerenciamento de transações, repositórios e
+    coleta de eventos. Implementações concretas devem fornecer a lógica
+    de sessão/banco de dados.
+    """
 
     domain_repo: DomainRepository
     view_repo: ViewRepository
     seen: set
     committed: bool
-    session: AsyncSession | None
+    session: Any
     user: UserBase | None
     schema: str | None
     create_schema: bool = False
 
     def __init__(
         self,
-        session_factory: AsyncSession = default_async_sql_session_factory,
+        session_factory: Callable | None = None,
         user: UserBase | None = None,
         schema: str | None = None,
         create_schema: bool = False,
+        service_type: str | None = None,
     ) -> None:
         if (
             (user and user.company)
@@ -56,15 +61,16 @@ class AbstractUnitOfWork(ABC):
         ):
             raise UnitOfWorkWithProblem("The user does not belong to this schema.")
 
-        self.sql_session_factory = session_factory or default_async_sql_session_factory
+        self.sql_session_factory = session_factory
         self.user = user
         self.schema = schema or (str(self.user.company) if self.user else None)
         self.create_schema = create_schema
+        self.service_type = service_type
         self._active_context = False
 
     def __call__(
         self,
-        domain: Domain | None = None,  # type: ignore
+        domain: Enum | None = None,
     ) -> AbstractUnitOfWork:
         """
         Configura os repositórios baseado no domínio.
@@ -110,7 +116,7 @@ class AbstractUnitOfWork(ABC):
         """Desfaz todas as alterações pendentes."""
         await self.session.rollback()
 
-    def collect_new_events(self) -> Generator[Event, None, None]:
+    def collect_new_events(self) -> Generator[Any, None, None]:
         """
         Coleta eventos pendentes de todos os agregados rastreados.
 
@@ -121,63 +127,3 @@ class AbstractUnitOfWork(ABC):
             for aggregate in getattr(self.domain_repo, "seen", set()):
                 while getattr(aggregate, "events", []):
                     yield aggregate.events.pop(0)
-
-
-WRITE_REPO = TypeVar("WRITE_REPO")
-READ_REPO = TypeVar("READ_REPO")
-
-
-class UnitOfWork(AbstractUnitOfWork, Generic[WRITE_REPO, READ_REPO]):
-    """Implementação concreta do Unit of Work com sessões SQLAlchemy."""
-
-    domain_repo: DomainRepository
-    view_repo: ViewRepository
-
-    def __init__(
-        self,
-        user: UserBase | None = None,
-        schema: str | None = None,
-        create_schema: bool = False,
-        read_only: bool = False,
-    ) -> None:
-        self.read_only = read_only
-
-        super().__init__(user=user, schema=schema, create_schema=create_schema)
-
-    async def __aenter__(self) -> UnitOfWork:
-        """Entra no contexto, criando sessões de leitura e escrita."""
-        self.committed = False
-
-        if self.create_schema:  # type: ignore[has-type]
-            self.session = await create_full_schema_within_transaction(
-                session_factory=self.sql_session_factory,
-                schema_id=self.schema,
-            )
-            self.create_schema = False
-        else:
-            self.session = await self.sql_session_factory(
-                read_only=False,
-                schema=self.schema,
-            )
-        self.read_session = await self.sql_session_factory(
-            read_only=True, schema=self.schema
-        )
-
-        if not self.read_only and self.domain_repo:
-            self.domain_repo = self.domain_repo(self.session)  # type: ignore[operator]
-
-        if self.view_repo:
-            self.view_repo = self.view_repo(self.read_session)  # type: ignore[operator]
-
-        return await super().__aenter__()  # type: ignore[return-value]
-
-    async def __aexit__(  # type: ignore[override]
-        self, *args: tuple[type[Exception], Exception, Exception]
-    ) -> None:
-        """Sai do contexto, fechando sessões de leitura e escrita."""
-        if hasattr(self, "read_session") and self.read_session:
-            await self.read_session.close()
-            await self.read_session.bind.dispose()
-            self.read_session = None
-
-        await super().__aexit__(*args)

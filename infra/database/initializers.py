@@ -4,16 +4,16 @@ from uuid import UUID
 
 import uuid7
 
-from business_contexts.adapters.orm import start_mappers
-from business_contexts.consts import (
+from shared_core.adapters.orm import start_mappers
+from shared_core.consts import (
     FIRST_COMPANY_ID,
     FIRST_USER_CPF,
     FIRST_USER_EMAIL,
     FIRST_USER_PASSWORD,
 )
-from business_contexts.domain.commands.company import CreateCompany
+from shared_core.domain.commands.company import CreateCompany
 from infra.database import delete_schema, list_existing_schemas
-from messagebus.bootstrap import bootstrap
+from shared_core.bootstrap import bootstrap
 from messagebus.entities import UserBase
 from messagebus.messagebus import logger
 
@@ -29,9 +29,11 @@ def generate_fake_user_for_first_registration(company_id: UUID) -> UserBase:
     return fake_user
 
 
-async def create_first_company_and_user() -> None:
+async def create_first_company_and_user(service_type: str | None = None) -> None:
     """Cria a primeira empresa e usuário do sistema, se ainda não existirem."""
-    schemas = await list_existing_schemas()
+    start_mappers()
+
+    schemas = await list_existing_schemas(service_type=service_type)
     for schema in schemas:
         try:
             UUID(schema)
@@ -41,7 +43,12 @@ async def create_first_company_and_user() -> None:
 
     company_id = UUID(FIRST_COMPANY_ID)
     fake_user = generate_fake_user_for_first_registration(company_id)
-    bus = bootstrap(user=fake_user, schema=str(company_id), create_schema=True)
+    bus = bootstrap(
+        user=fake_user,
+        schema=str(company_id),
+        create_schema=True,
+        service_type=service_type,
+    )
 
     try:
         await bus.handle(
@@ -56,9 +63,8 @@ async def create_first_company_and_user() -> None:
                 should_create_user=True,
             )
         )
-        start_mappers()
     except Exception as error:
-        await delete_schema(str(company_id))
+        await delete_schema(schema_id=str(company_id), service_type=service_type)
         logger.error(
             f"Erro ao criar empresa. O schema {company_id!s} foi dropado: {error}"
         )

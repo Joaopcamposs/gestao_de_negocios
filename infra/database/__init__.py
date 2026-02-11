@@ -12,19 +12,25 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import registry
 
-from messagebus.entities import UserSecurity
+from infra.database.service_registry import get_db_name_for_service
+from shared_core.security import UserSecurity
 
 mapper_registry = registry()
 
-engine: AsyncEngine | None = None
+# Cache de engines por nome de banco de dados
+_engines: dict[str, AsyncEngine] = {}
 
 
-def get_database_uri() -> str:
+def get_database_uri(service_type: str | None = None) -> str:
     """
     Monta a URI de conexão com o banco de dados.
 
     Lê variáveis de ambiente diretamente (sem cache) para garantir
     que testes nunca conectem ao banco de produção.
+
+    Args:
+        service_type: Tipo do serviço para resolução de database (opcional).
+                      Se None, usa o banco padrão (DB_NAME).
 
     Returns:
         URI de conexão formatada.
@@ -35,7 +41,7 @@ def get_database_uri() -> str:
     host = os.getenv("DB_HOST", "localhost")
     password = os.getenv("DB_PASSWORD", "password")
     user = os.getenv("DB_USER", "postgres")
-    db_name = os.getenv("DB_NAME", "postgres")
+    db_name = get_db_name_for_service(service_type)
 
     default_port = 54322
     if any([test_environment, in_docker]):
@@ -61,6 +67,7 @@ async def set_schema_name(session: AsyncSession, schema: str) -> None:
 def get_async_sql_engine(
     isolation_level: str = "READ COMMITTED",
     force_create_engine: bool = False,
+    service_type: str | None = None,
 ) -> AsyncEngine:
     """
     Retorna ou cria a engine assíncrona do SQLAlchemy.
@@ -68,31 +75,29 @@ def get_async_sql_engine(
     Args:
         isolation_level: Nível de isolamento da transação.
         force_create_engine: Se True, cria uma nova engine sem pool.
+        service_type: Tipo do serviço para resolução de database (opcional).
 
     Returns:
         Engine assíncrona do SQLAlchemy.
     """
+    cache_key = service_type or "__default__"
 
-    def _create_engine() -> AsyncEngine:
-        global engine
+    if force_create_engine:
+        return create_async_engine(
+            get_database_uri(service_type=service_type),
+            isolation_level=isolation_level,
+            future=True,
+            poolclass=NullPool,
+        )
 
-        if force_create_engine:
-            return create_async_engine(
-                get_database_uri(),
-                isolation_level=isolation_level,
-                future=True,
-                poolclass=NullPool,
-            )
+    if cache_key not in _engines:
+        _engines[cache_key] = create_async_engine(
+            get_database_uri(service_type=service_type),
+            isolation_level=isolation_level,
+            future=True,
+        )
 
-        if not engine:
-            engine = create_async_engine(
-                get_database_uri(),
-                isolation_level=isolation_level,
-                future=True,
-            )
-        return engine
-
-    return _create_engine()
+    return _engines[cache_key]
 
 
 async def default_async_sql_session_factory(
@@ -100,6 +105,7 @@ async def default_async_sql_session_factory(
     schema: str | None = None,
     isolation_level: str = "READ COMMITTED",
     force_create_engine: bool = False,
+    service_type: str | None = None,
 ) -> AsyncSession:
     """
     Cria uma sessão SQLAlchemy assíncrona.
@@ -112,12 +118,15 @@ async def default_async_sql_session_factory(
         schema: Schema a ser utilizado na sessão.
         isolation_level: Nível de isolamento da transação.
         force_create_engine: Se True, força criação de nova engine.
+        service_type: Tipo do serviço para resolução de database (opcional).
 
     Returns:
         Sessão assíncrona do SQLAlchemy.
     """
     _engine = get_async_sql_engine(
-        isolation_level=isolation_level, force_create_engine=force_create_engine
+        isolation_level=isolation_level,
+        force_create_engine=force_create_engine,
+        service_type=service_type,
     )
 
     schema_in_use = schema or "public"
@@ -172,26 +181,26 @@ SCHEMAS_TO_NOT_LIST: tuple[str, ...] = (
 )
 
 
-async def list_existing_schemas() -> list[str]:
-    async with get_async_sql_engine().begin() as conn:
+async def list_existing_schemas(service_type: str | None = None) -> list[str]:
+    async with get_async_sql_engine(service_type=service_type).begin() as conn:
         result = await conn.execute(
             text("SELECT schema_name FROM information_schema.schemata")
         )
         return [row[0] for row in result if row[0] not in SCHEMAS_TO_NOT_LIST]
 
 
-async def delete_schema(schema_id: str) -> None:
-    async with get_async_sql_engine().begin() as conn:
+async def delete_schema(schema_id: str, service_type: str | None = None) -> None:
+    async with get_async_sql_engine(service_type=service_type).begin() as conn:
         await conn.execute(text(f'DROP SCHEMA IF EXISTS "{schema_id}" CASCADE;'))
 
 
-async def validate_company_email(email: str) -> None:
+async def validate_company_email(email: str, service_type: str | None = None) -> None:
     """
     Percorre a tabela public.public_user e verifica se o hash do email
     é igual a algum existente.
     """
     email_hash = UserSecurity.hash_email(email)
-    async with get_async_sql_engine().begin() as conn:
+    async with get_async_sql_engine(service_type=service_type).begin() as conn:
         result = await conn.execute(
             text(
                 f"SELECT email_hash FROM public.public_user WHERE email_hash = '{email_hash}'"

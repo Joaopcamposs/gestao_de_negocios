@@ -1,0 +1,22 @@
+services:
+  dentist-api:
+    build:
+      context: ../..
+      dockerfile: infra/applications/Dockerfile.service
+      args:
+        SERVICE_MODULE: services.dentist.main:app
+    container_name: barramento_dentist_api
+    ports:
+      - "8001:8000"
+    environment:
+      - IN_DOCKER=true
+      - DB_HOST=barramento_postgres
+      - SERVICE_TYPE=dentist
+    env_file:
+      - ../../.env
+    networks:
+      - barramento_network
+
+networks:
+  barramento_network:
+    external: true

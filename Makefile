@@ -1,5 +1,6 @@
 export COMPOSE_NAME=barramento_de_mensagens
 export COMPOSE_TEST_NAME=$(COMPOSE_NAME)_test
+export INFRA=infra/applications
 
 # ── Lint & Quality ──────────────────────────────────────────────────
 ruff:
@@ -9,30 +10,73 @@ lint:
 	ruff format --check . && ruff check .
 
 typecheck:
-	mypy business_contexts/ infra/ messagebus/ libs/
+	mypy shared_core/ services/ infra/ messagebus/ libs/
 
 check: lint typecheck
 	@echo "✔ Lint e type-check passaram."
 
-# ── Docker (app) ────────────────────────────────────────────────────
-compose:
-	docker compose -f docker-compose.yml --env-file .env -p $(COMPOSE_NAME) up --build -d
+# ── Infra (Postgres compartilhado) ─────────────────────────────────
+infra-up:
+	docker compose -f $(INFRA)/docker-compose.infra.yml -p $(COMPOSE_NAME)_infra up -d --wait
+	@echo "✔ Postgres rodando em localhost:54322"
 
-postgres:
-	docker compose -f docker-compose.yml --env-file .env -p $(COMPOSE_NAME) up --build -d postgres
+infra-down:
+	docker compose -f $(INFRA)/docker-compose.infra.yml -p $(COMPOSE_NAME)_infra down
 
-# ── Docker (testes) ─────────────────────────────────────────────────
-test-env:
-	docker compose -f docker-compose.test.yml -p $(COMPOSE_TEST_NAME) rm -f && \
-	docker compose -f docker-compose.test.yml -p $(COMPOSE_TEST_NAME) up
+infra-destroy:
+	docker compose -f $(INFRA)/docker-compose.infra.yml -p $(COMPOSE_NAME)_infra down -v
+	@echo "✔ Postgres parado e volumes removidos."
 
+infra-logs:
+	docker compose -f $(INFRA)/docker-compose.infra.yml -p $(COMPOSE_NAME)_infra logs -f
+
+# ── Deploy: Dentist (porta 8001) ──────────────────────────────────
+deploy-dentist: infra-up
+	docker compose -f $(INFRA)/docker-compose.dentist.yml -p $(COMPOSE_NAME)_dentist up --build -d
+	@echo "✔ Dentist API rodando em http://localhost:8001/docs"
+
+stop-dentist:
+	docker compose -f $(INFRA)/docker-compose.dentist.yml -p $(COMPOSE_NAME)_dentist down
+
+logs-dentist:
+	docker compose -f $(INFRA)/docker-compose.dentist.yml -p $(COMPOSE_NAME)_dentist logs -f
+
+# ── Deploy: Lawyer (porta 8002) ───────────────────────────────────
+deploy-lawyer: infra-up
+	docker compose -f $(INFRA)/docker-compose.lawyer.yml -p $(COMPOSE_NAME)_lawyer up --build -d
+	@echo "✔ Lawyer API rodando em http://localhost:8002/docs"
+
+stop-lawyer:
+	docker compose -f $(INFRA)/docker-compose.lawyer.yml -p $(COMPOSE_NAME)_lawyer down
+
+logs-lawyer:
+	docker compose -f $(INFRA)/docker-compose.lawyer.yml -p $(COMPOSE_NAME)_lawyer logs -f
+
+# ── Deploy: Todos ─────────────────────────────────────────────────
+deploy-all: deploy-dentist deploy-lawyer
+	@echo ""
+	@echo "  ✔ Todos os serviços rodando:"
+	@echo "    Dentist → http://localhost:8001/docs"
+	@echo "    Lawyer  → http://localhost:8002/docs"
+
+stop-all: stop-dentist stop-lawyer infra-down
+	@echo "✔ Todos os serviços e infra parados."
+
+# ── Dev local (sem Docker, requer postgres local) ─────────────────
+run-dentist:
+	uvicorn services.dentist.main:app --host 0.0.0.0 --port 8001 --reload
+
+run-lawyer:
+	uvicorn services.lawyer.main:app --host 0.0.0.0 --port 8002 --reload
+
+# ── Docker (testes) ───────────────────────────────────────────────
 test-db-up:
-	docker compose -f docker-compose.test.yml -p $(COMPOSE_TEST_NAME) up -d --wait
+	docker compose -f $(INFRA)/docker-compose.test.yml -p $(COMPOSE_TEST_NAME) up -d --wait
 
 test-db-down:
-	docker compose -f docker-compose.test.yml -p $(COMPOSE_TEST_NAME) down -v
+	docker compose -f $(INFRA)/docker-compose.test.yml -p $(COMPOSE_TEST_NAME) down -v
 
-# ── Testes ──────────────────────────────────────────────────────────
+# ── Testes ────────────────────────────────────────────────────────
 test-unit:
 	python -m pytest tests/unit/ -v
 
@@ -40,14 +84,70 @@ test-integration: test-db-up
 	python -m pytest tests/integration/ -v; \
 	$(MAKE) test-db-down
 
+test-dentist: test-db-up
+	python -m pytest tests/unit/test_services/test_dentist/ tests/integration/test_services/test_dentist/ -v; \
+	$(MAKE) test-db-down
+
+test-lawyer: test-db-up
+	python -m pytest tests/unit/test_services/test_lawyer/ tests/integration/test_services/test_lawyer/ -v; \
+	$(MAKE) test-db-down
+
 test-all: test-db-up
 	python -m pytest tests/ -v; \
 	$(MAKE) test-db-down
 
 test-cov: test-db-up
-	python -m pytest tests/ -v --cov=business_contexts --cov=infra --cov=messagebus --cov-report=term-missing; \
+	python -m pytest tests/ -v --cov=shared_core --cov=services --cov=infra --cov=messagebus --cov-report=term-missing; \
 	$(MAKE) test-db-down
 
-# ── Limpeza ─────────────────────────────────────────────────────────
+# ── Limpeza ───────────────────────────────────────────────────────
 docker-clean:
 	docker system prune -f
+
+# ── Help ──────────────────────────────────────────────────────────
+help:
+	@echo ""
+	@echo "  Infraestrutura"
+	@echo "  ──────────────────────────────────────────────────"
+	@echo "  make infra-up          → Sobe Postgres compartilhado (:54322)"
+	@echo "  make infra-down        → Para Postgres (preserva dados)"
+	@echo "  make infra-destroy     → Para Postgres e remove volumes"
+	@echo ""
+	@echo "  Deploy (Docker) — cada serviço sobe infra automaticamente"
+	@echo "  ──────────────────────────────────────────────────"
+	@echo "  make deploy-dentist    → Dentist API      http://localhost:8001/docs"
+	@echo "  make deploy-lawyer     → Lawyer API       http://localhost:8002/docs"
+	@echo "  make deploy-all        → Todos os serviços"
+	@echo ""
+	@echo "  Parar serviços"
+	@echo "  ──────────────────────────────────────────────────"
+	@echo "  make stop-dentist      → Para Dentist"
+	@echo "  make stop-lawyer       → Para Lawyer"
+	@echo "  make stop-all          → Para tudo (serviços + infra)"
+	@echo ""
+	@echo "  Logs"
+	@echo "  ──────────────────────────────────────────────────"
+	@echo "  make logs-dentist      → Logs do Dentist"
+	@echo "  make logs-lawyer       → Logs do Lawyer"
+	@echo "  make infra-logs        → Logs do Postgres"
+	@echo ""
+	@echo "  Dev local (sem Docker)"
+	@echo "  ──────────────────────────────────────────────────"
+	@echo "  make run-dentist       → Dentist na porta 8001"
+	@echo "  make run-lawyer        → Lawyer na porta 8002"
+	@echo ""
+	@echo "  Testes"
+	@echo "  ──────────────────────────────────────────────────"
+	@echo "  make test-unit         → Testes unitários"
+	@echo "  make test-integration  → Testes de integração"
+	@echo "  make test-dentist      → Testes do dentista"
+	@echo "  make test-lawyer       → Testes do advogado"
+	@echo "  make test-all          → Todos os testes"
+	@echo "  make test-cov          → Testes com cobertura"
+	@echo ""
+	@echo "  Qualidade"
+	@echo "  ──────────────────────────────────────────────────"
+	@echo "  make ruff              → Formata e corrige lint"
+	@echo "  make lint              → Verifica lint"
+	@echo "  make check             → Lint + type-check"
+	@echo ""
