@@ -181,8 +181,8 @@ SCHEMAS_TO_NOT_LIST: tuple[str, ...] = (
 )
 
 
-async def list_existing_schemas() -> list[str]:
-    async with get_async_sql_engine().begin() as conn:
+async def list_existing_schemas(service_type: str | None = None) -> list[str]:
+    async with get_async_sql_engine(service_type=service_type).begin() as conn:
         result = await conn.execute(
             text("SELECT schema_name FROM information_schema.schemata")
         )
@@ -194,13 +194,13 @@ async def delete_schema(schema_id: str) -> None:
         await conn.execute(text(f'DROP SCHEMA IF EXISTS "{schema_id}" CASCADE;'))
 
 
-async def validate_company_email(email: str) -> None:
+async def validate_company_email(email: str, service_type: str | None = None) -> None:
     """
     Percorre a tabela public.public_user e verifica se o hash do email
     é igual a algum existente.
     """
     email_hash = UserSecurity.hash_email(email)
-    async with get_async_sql_engine().begin() as conn:
+    async with get_async_sql_engine(service_type=service_type).begin() as conn:
         result = await conn.execute(
             text(
                 f"SELECT email_hash FROM public.public_user WHERE email_hash = '{email_hash}'"

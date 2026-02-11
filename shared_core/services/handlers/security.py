@@ -9,7 +9,7 @@ from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
 
 from shared_core.adapters.repository.view_repo.user import UserViewRepo
-from shared_core.consts import ALGORITHM, SECRET_KEY, oauth2_scheme
+from shared_core.consts import ALGORITHM, SECRET_KEY, SERVICE_TYPE, oauth2_scheme
 from shared_core.domain.commands.security import AuthenticateUser
 from shared_core.domain.entities.user import User
 from shared_core.domain.excecoes import CredentialsException
@@ -68,7 +68,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
     except (InvalidTokenError, ValidationError):
         raise CredentialsException()
 
-    uow = UnitOfWork(schema=str(company_id))
+    uow = UnitOfWork(schema=str(company_id), service_type=SERVICE_TYPE)
     async with uow(Domain.user) as uow:
         view_repo: UserViewRepo = cast(UserViewRepo, uow.view_repo)
         user = await view_repo.get_by_email(email)

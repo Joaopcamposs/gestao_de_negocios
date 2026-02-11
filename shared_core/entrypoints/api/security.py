@@ -11,6 +11,7 @@ from shared_core.entrypoints.schemas.security import Token
 from shared_core.entrypoints.schemas.user import ReadUserSchema
 from shared_core.services.handlers.security import get_current_user
 from shared_core.bootstrap import bootstrap
+from shared_core.consts import SERVICE_TYPE
 
 security_router = APIRouter(prefix="/api", tags=["Login"])
 
@@ -20,7 +21,7 @@ async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:
     """Autentica o usuário e retorna um token JWT."""
-    bus = bootstrap()
+    bus = bootstrap(service_type=SERVICE_TYPE)
 
     token = await bus.handle(
         AuthenticateUser(

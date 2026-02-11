@@ -18,8 +18,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     import services.lawyer.adapters.orm.legal_case  # noqa: F401 - registra mappers do advogado
 
     from infra.database.initializers import create_first_company_and_user
+    from infra.database.schema_handlers import (
+        ensure_public_tables,
+        ensure_tables_in_existing_schemas,
+    )
 
-    await create_first_company_and_user()
+    await ensure_public_tables(service_type="lawyer")
+    await create_first_company_and_user(service_type="lawyer")
+    await ensure_tables_in_existing_schemas(service_type="lawyer")
     yield
 
 

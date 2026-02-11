@@ -19,6 +19,7 @@ FIRST_USER_CPF: str = os.getenv("FIRST_USER_CPF", "")
 FIRST_USER_EMAIL: str = os.getenv("FIRST_USER_EMAIL", "")
 FIRST_USER_PASSWORD: str = os.getenv("FIRST_USER_PASSWORD", "")
 ADMIN_USER_PREFIX: str = os.getenv("ADMIN_USER_PREFIX", "")
+SERVICE_TYPE: str | None = os.getenv("SERVICE_TYPE") or None
 
 AES_KEY = base64.b64decode(os.getenv("AES_KEY", "").encode())
 SECRET_KEY = os.getenv("SECRET_KEY", "")

@@ -17,6 +17,7 @@ from shared_core.entrypoints.schemas.company import (
 )
 from shared_core.services.handlers.security import current_user, get_current_user
 from shared_core.bootstrap import bootstrap
+from shared_core.consts import SERVICE_TYPE
 from infra.database.unit_of_work import UnitOfWork
 
 router = APIRouter(
@@ -27,7 +28,7 @@ router = APIRouter(
 @router.post("/company", response_model=UUID, status_code=status.HTTP_201_CREATED)
 async def post_company(body: CreateCompanySchema) -> UUID:
     """Cria uma nova empresa."""
-    bus = bootstrap(user=current_user.get())
+    bus = bootstrap(user=current_user.get(), service_type=SERVICE_TYPE)
 
     command = CreateCompany(
         legal_name=body.legal_name,
@@ -46,7 +47,7 @@ async def post_company(body: CreateCompanySchema) -> UUID:
 @router.put("/company", status_code=status.HTTP_200_OK)
 async def put_company(body: UpdateCompanySchema) -> None:
     """Atualiza uma empresa existente."""
-    bus = bootstrap(user=current_user.get())
+    bus = bootstrap(user=current_user.get(), service_type=SERVICE_TYPE)
 
     command = UpdateCompany(
         legal_name=body.legal_name,
@@ -62,7 +63,7 @@ async def put_company(body: UpdateCompanySchema) -> None:
 @router.get("/company", response_model=list[ReadCompanySchema])
 async def get_company(legal_name: str | None = None, include_deleted: bool = False):
     """Consulta empresas. Se a razão social for informada, filtra pela razão social."""
-    uow = UnitOfWork(user=current_user.get())
+    uow = UnitOfWork(user=current_user.get(), service_type=SERVICE_TYPE)
     companies = await view_company(
         uow, legal_name=legal_name, include_deleted=include_deleted
     )
@@ -72,7 +73,7 @@ async def get_company(legal_name: str | None = None, include_deleted: bool = Fal
 @router.delete("/company", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_company(legal_name: str) -> None:
     """Exclui uma empresa pela razão social."""
-    bus = bootstrap(user=current_user.get())
+    bus = bootstrap(user=current_user.get(), service_type=SERVICE_TYPE)
 
     command = DeleteCompany(legal_name=legal_name)
     await bus.handle(command)

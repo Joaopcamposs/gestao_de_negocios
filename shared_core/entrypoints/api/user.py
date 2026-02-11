@@ -17,6 +17,7 @@ from shared_core.entrypoints.schemas.user import (
 )
 from shared_core.services.handlers.security import current_user, get_current_user
 from shared_core.bootstrap import bootstrap
+from shared_core.consts import SERVICE_TYPE
 from infra.database.unit_of_work import UnitOfWork
 
 router = APIRouter(prefix="/v1", tags=["Users"], dependencies=[Depends(get_current_user)])
@@ -25,7 +26,7 @@ router = APIRouter(prefix="/v1", tags=["Users"], dependencies=[Depends(get_curre
 @router.post("/user", response_model=UUID, status_code=status.HTTP_201_CREATED)
 async def post_user(body: CreateUserSchema) -> UUID:
     """Cria um novo usuário."""
-    bus = bootstrap(user=current_user.get())
+    bus = bootstrap(user=current_user.get(), service_type=SERVICE_TYPE)
 
     command = CreateUser(
         company=current_user.get().company,
@@ -42,7 +43,7 @@ async def post_user(body: CreateUserSchema) -> UUID:
 @router.put("/user", status_code=status.HTTP_200_OK)
 async def put_user(body: UpdateUserSchema) -> None:
     """Atualiza um usuário existente."""
-    bus = bootstrap(user=current_user.get())
+    bus = bootstrap(user=current_user.get(), service_type=SERVICE_TYPE)
 
     command = UpdateUser(
         email=body.email,
@@ -60,7 +61,7 @@ async def get_user(
     include_deleted: bool = False,
 ):
     """Consulta usuários de uma empresa. A empresa é obrigatória."""
-    uow = UnitOfWork(user=current_user.get())
+    uow = UnitOfWork(user=current_user.get(), service_type=SERVICE_TYPE)
     users = await view_user(uow, email=email, include_deleted=include_deleted)
     return users
 
@@ -68,7 +69,7 @@ async def get_user(
 @router.delete("/user", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(email: str) -> None:
     """Exclui um usuário pelo email."""
-    bus = bootstrap(user=current_user.get())
+    bus = bootstrap(user=current_user.get(), service_type=SERVICE_TYPE)
 
     command = DeleteUser(email=email)
     await bus.handle(command)

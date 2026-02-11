@@ -29,9 +29,9 @@ def generate_fake_user_for_first_registration(company_id: UUID) -> UserBase:
     return fake_user
 
 
-async def create_first_company_and_user() -> None:
+async def create_first_company_and_user(service_type: str | None = None) -> None:
     """Cria a primeira empresa e usuário do sistema, se ainda não existirem."""
-    schemas = await list_existing_schemas()
+    schemas = await list_existing_schemas(service_type=service_type)
     for schema in schemas:
         try:
             UUID(schema)
@@ -41,7 +41,12 @@ async def create_first_company_and_user() -> None:
 
     company_id = UUID(FIRST_COMPANY_ID)
     fake_user = generate_fake_user_for_first_registration(company_id)
-    bus = bootstrap(user=fake_user, schema=str(company_id), create_schema=True)
+    bus = bootstrap(
+        user=fake_user,
+        schema=str(company_id),
+        create_schema=True,
+        service_type=service_type,
+    )
 
     try:
         await bus.handle(

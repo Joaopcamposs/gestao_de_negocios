@@ -18,8 +18,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     import services.dentist.adapters.orm.patient  # noqa: F401 - registra mappers do dentista
 
     from infra.database.initializers import create_first_company_and_user
+    from infra.database.schema_handlers import (
+        ensure_public_tables,
+        ensure_tables_in_existing_schemas,
+    )
 
-    await create_first_company_and_user()
+    await ensure_public_tables(service_type="dentist")
+    await create_first_company_and_user(service_type="dentist")
+    await ensure_tables_in_existing_schemas(service_type="dentist")
     yield
 
 

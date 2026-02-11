@@ -4,7 +4,7 @@ from abc import abstractmethod
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import insert, select, update
+from sqlalchemy import insert, select, text, update
 from sqlalchemy.sql import Executable
 
 from shared_core.domain.aggregate.company import Company
@@ -69,12 +69,19 @@ class AbstractCompanyDomainRepo(DomainRepository):
 class CompanyDomainRepo(AbstractCompanyDomainRepo):
     """Implementação concreta do repositório de domínio de Company."""
 
-    @staticmethod
-    async def validate_company_email(email: str) -> None:
+    async def validate_company_email(self, email: str) -> None:
         """Valida se o email já está em uso por outra empresa."""
-        from infra.database import validate_company_email
+        from shared_core.security import UserSecurity
 
-        await validate_company_email(email)
+        email_hash = UserSecurity.hash_email(email)
+        async with self.session as session:
+            result = await session.execute(
+                text(
+                    f"SELECT email_hash FROM public.public_user WHERE email_hash = '{email_hash}'"
+                )
+            )
+            if result.fetchone():
+                raise ValueError(f"Email {email} já existe em outra empresa!")
 
     async def create_aggregate(
         self,
