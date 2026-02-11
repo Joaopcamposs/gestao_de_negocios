@@ -189,8 +189,8 @@ async def list_existing_schemas(service_type: str | None = None) -> list[str]:
         return [row[0] for row in result if row[0] not in SCHEMAS_TO_NOT_LIST]
 
 
-async def delete_schema(schema_id: str) -> None:
-    async with get_async_sql_engine().begin() as conn:
+async def delete_schema(schema_id: str, service_type: str | None = None) -> None:
+    async with get_async_sql_engine(service_type=service_type).begin() as conn:
         await conn.execute(text(f'DROP SCHEMA IF EXISTS "{schema_id}" CASCADE;'))
 
 

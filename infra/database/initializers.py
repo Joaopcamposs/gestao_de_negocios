@@ -31,6 +31,8 @@ def generate_fake_user_for_first_registration(company_id: UUID) -> UserBase:
 
 async def create_first_company_and_user(service_type: str | None = None) -> None:
     """Cria a primeira empresa e usuário do sistema, se ainda não existirem."""
+    start_mappers()
+
     schemas = await list_existing_schemas(service_type=service_type)
     for schema in schemas:
         try:
@@ -61,9 +63,8 @@ async def create_first_company_and_user(service_type: str | None = None) -> None
                 should_create_user=True,
             )
         )
-        start_mappers()
     except Exception as error:
-        await delete_schema(str(company_id))
+        await delete_schema(schema_id=str(company_id), service_type=service_type)
         logger.error(
             f"Erro ao criar empresa. O schema {company_id!s} foi dropado: {error}"
         )

@@ -13,19 +13,9 @@ from shared_core.entrypoints.api.user import router as user_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Inicializa o microserviço dentista."""
-    import shared_core.adapters.orm  # noqa: F401 - registra mappers do core
-    import services.dentist.adapters.orm.patient  # noqa: F401 - registra mappers do dentista
-
     from infra.database.initializers import create_first_company_and_user
-    from infra.database.schema_handlers import (
-        ensure_public_tables,
-        ensure_tables_in_existing_schemas,
-    )
 
-    await ensure_public_tables(service_type="dentist")
     await create_first_company_and_user(service_type="dentist")
-    await ensure_tables_in_existing_schemas(service_type="dentist")
     yield
 
 

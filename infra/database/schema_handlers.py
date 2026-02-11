@@ -62,65 +62,6 @@ async def create_schema_and_tables(
         await engine_temp.dispose()
 
 
-async def ensure_public_tables(service_type: str | None = None) -> None:
-    """
-    Garante que as tabelas do schema 'public' existam no database do serviço.
-
-    Necessário porque cada serviço usa um database separado (db_dentist, db_lawyer)
-    e as tabelas do schema public (ex: public_user) precisam existir lá.
-
-    Args:
-        service_type: Tipo do serviço para resolução de database (opcional).
-    """
-    engine_temp: AsyncEngine = get_async_sql_engine(
-        force_create_engine=True, service_type=service_type
-    )
-    try:
-        async with engine_temp.begin() as conn:
-            await conn.run_sync(mapper_registry.metadata.create_all)
-    finally:
-        await engine_temp.dispose()
-
-
-async def ensure_tables_in_existing_schemas(
-    service_type: str | None = None,
-) -> None:
-    """
-    Garante que todas as tabelas mapeadas existam nos schemas de tenant existentes.
-
-    Útil quando novas tabelas são adicionadas (ex: legal_case) e precisam
-    ser criadas em schemas que já existiam antes do novo mapeamento ORM.
-
-    Args:
-        service_type: Tipo do serviço para resolução de database (opcional).
-    """
-    from infra.database import list_existing_schemas
-
-    schemas = await list_existing_schemas(service_type=service_type)
-    if not schemas:
-        return
-
-    engine_temp: AsyncEngine = get_async_sql_engine(
-        force_create_engine=True, service_type=service_type
-    )
-
-    try:
-        for schema_id in schemas:
-            for table in mapper_registry.metadata.sorted_tables:
-                if table.schema == "public":
-                    continue
-                table.schema = schema_id
-
-            async with engine_temp.begin() as conn:
-                await conn.run_sync(mapper_registry.metadata.create_all)
-
-            for table in mapper_registry.metadata.sorted_tables:
-                if table.schema == schema_id:
-                    table.schema = None
-    finally:
-        await engine_temp.dispose()
-
-
 async def create_full_schema_within_transaction(
     session_factory: Callable,
     schema_id: str | None,

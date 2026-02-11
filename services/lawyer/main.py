@@ -13,19 +13,9 @@ from shared_core.entrypoints.api.user import router as user_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Inicializa o microserviço advogado."""
-    import shared_core.adapters.orm  # noqa: F401 - registra mappers do core
-    import services.lawyer.adapters.orm.legal_case  # noqa: F401 - registra mappers do advogado
-
     from infra.database.initializers import create_first_company_and_user
-    from infra.database.schema_handlers import (
-        ensure_public_tables,
-        ensure_tables_in_existing_schemas,
-    )
 
-    await ensure_public_tables(service_type="lawyer")
     await create_first_company_and_user(service_type="lawyer")
-    await ensure_tables_in_existing_schemas(service_type="lawyer")
     yield
 
 
