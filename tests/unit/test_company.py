@@ -4,23 +4,23 @@ from uuid import UUID
 
 import uuid7
 
-from business_contexts.domain.aggregate.company import Company
-from business_contexts.domain.commands.company import (
+from shared_core.domain.aggregate.company import Company
+from shared_core.domain.commands.company import (
     CreateCompany,
     DeleteCompany,
     UpdateCompany,
 )
-from business_contexts.domain.entitites.company import Company as CompanyEntity
-from business_contexts.domain.events.company import (
+from shared_core.domain.entities.company import Company as CompanyEntity
+from shared_core.domain.events.company import (
     CompanyCreated,
     CompanyDeleted,
     CompanyUpdated,
 )
-from business_contexts.domain.events.user import (
+from shared_core.domain.events.user import (
     TimeToCreateCompanyAdminUser,
     TimeToCreateInitialCompanyUser,
 )
-from business_contexts.entrypoints.schemas.company import (
+from shared_core.entrypoints.schemas.company import (
     CreateCompanySchema,
     ReadCompanySchema,
     UpdateCompanySchema,

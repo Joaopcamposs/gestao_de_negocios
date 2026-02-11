@@ -4,16 +4,16 @@ from uuid import UUID
 
 import uuid7
 
-from business_contexts.adapters.orm import start_mappers
-from business_contexts.consts import (
+from shared_core.adapters.orm import start_mappers
+from shared_core.consts import (
     FIRST_COMPANY_ID,
     FIRST_USER_CPF,
     FIRST_USER_EMAIL,
     FIRST_USER_PASSWORD,
 )
-from business_contexts.domain.commands.company import CreateCompany
+from shared_core.domain.commands.company import CreateCompany
 from infra.database import delete_schema, list_existing_schemas
-from messagebus.bootstrap import bootstrap
+from shared_core.bootstrap import bootstrap
 from messagebus.entities import UserBase
 from messagebus.messagebus import logger
 

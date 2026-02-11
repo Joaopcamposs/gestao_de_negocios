@@ -19,7 +19,10 @@ async def verify_existing_schema(conn: AsyncConnection, schema_id: str) -> None:
         raise ValueError(f"Schema {schema_id} já existe")
 
 
-async def create_schema_and_tables(schema_id: str) -> None:
+async def create_schema_and_tables(
+    schema_id: str,
+    service_type: str | None = None,
+) -> None:
     """
     Cria o schema e suas tabelas no banco de dados.
 
@@ -27,8 +30,14 @@ async def create_schema_and_tables(schema_id: str) -> None:
     2. Ajusta os metadados para usar schema_id
     3. Cria as tabelas do tenant dentro dele
     4. Restaura schema=None nos metadados
+
+    Args:
+        schema_id: Identificador do schema (UUID da empresa).
+        service_type: Tipo do serviço para resolução de database (opcional).
     """
-    engine_temp: AsyncEngine = get_async_sql_engine(force_create_engine=True)
+    engine_temp: AsyncEngine = get_async_sql_engine(
+        force_create_engine=True, service_type=service_type
+    )
 
     try:
         async with engine_temp.begin() as conn:
@@ -56,15 +65,19 @@ async def create_schema_and_tables(schema_id: str) -> None:
 async def create_full_schema_within_transaction(
     session_factory: Callable,
     schema_id: str | None,
+    service_type: str | None = None,
 ) -> AsyncSession:
     """Cria o schema completo e retorna uma sessão vinculada a ele."""
-    await create_schema_and_tables(schema_id=schema_id)
+    await create_schema_and_tables(schema_id=schema_id, service_type=service_type)
 
     if schema_id:
         schema_id = str(schema_id)
 
     session = await session_factory(
-        read_only=False, schema=schema_id, force_create_engine=True
+        read_only=False,
+        schema=schema_id,
+        force_create_engine=True,
+        service_type=service_type,
     )
 
     return session

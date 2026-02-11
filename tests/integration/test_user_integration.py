@@ -4,20 +4,20 @@ from uuid import UUID
 
 import pytest
 
-from business_contexts.adapters.views.company import view_company
-from business_contexts.adapters.views.user import view_user
-from business_contexts.domain.commands.company import CreateCompany
-from business_contexts.domain.commands.user import (
+from shared_core.adapters.views.company import view_company
+from shared_core.adapters.views.user import view_user
+from shared_core.domain.commands.company import CreateCompany
+from shared_core.domain.commands.user import (
     CreateUser,
     DeleteUser,
     UpdateUser,
 )
-from business_contexts.domain.excecoes import (
+from shared_core.domain.excecoes import (
     UserAlreadyRegistered,
     UserNotFound,
 )
-from messagebus.bootstrap import bootstrap
-from messagebus.unity_of_work import UnitOfWork
+from shared_core.bootstrap import bootstrap
+from infra.database.unit_of_work import UnitOfWork
 
 
 async def _create_company(legal_name: str = "Test Company", **overrides) -> UUID:

@@ -4,18 +4,18 @@ from uuid import UUID
 
 import pytest
 
-from business_contexts.adapters.views.company import view_company
-from business_contexts.domain.commands.company import (
+from shared_core.adapters.views.company import view_company
+from shared_core.domain.commands.company import (
     CreateCompany,
     DeleteCompany,
     UpdateCompany,
 )
-from business_contexts.domain.excecoes import (
+from shared_core.domain.excecoes import (
     CompanyAlreadyRegistered,
     CompanyNotFound,
 )
-from messagebus.bootstrap import bootstrap
-from messagebus.unity_of_work import UnitOfWork
+from shared_core.bootstrap import bootstrap
+from infra.database.unit_of_work import UnitOfWork
 
 
 def _create_company_cmd(legal_name: str, **overrides) -> CreateCompany:

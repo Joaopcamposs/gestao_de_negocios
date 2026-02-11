@@ -1,6 +1,8 @@
-# Barramento de Mensagens
+# Barramento de Mensagens — Plataforma Multi-Serviço
 
-Barramento de mensagens (comandos e eventos) para integração entre contextos de negócio, implementado com **Python 3.11**, **FastAPI**, **SQLAlchemy** (async) e **PostgreSQL**. Segue os padrões de **Domain-Driven Design (DDD)**, **CQRS** e **Event-Driven Architecture**. Inclui autenticação via **JWT** com criptografia **AES-GCM** para dados sensíveis e **bcrypt** para senhas.
+Plataforma multi-serviço para gerenciamento de clientes de diferentes profissões, implementada com **Python 3.11**, **FastAPI**, **SQLAlchemy** (async) e **PostgreSQL**. Segue os padrões de **Domain-Driven Design (DDD)**, **CQRS** e **Event-Driven Architecture**.
+
+Cada profissão é um **microserviço independente** com deploy isolado, compartilhando um barramento de mensagens desacoplado, um core de autenticação/empresa e infraestrutura de banco de dados.
 
 ---
 
@@ -8,48 +10,51 @@ Barramento de mensagens (comandos e eventos) para integração entre contextos d
 
 - [Arquitetura](#arquitetura)
 - [Estrutura do Projeto](#estrutura-do-projeto)
-- [O que foi implementado](#o-que-foi-implementado)
+- [Serviços Disponíveis](#serviços-disponíveis)
 - [Pré-requisitos](#pré-requisitos)
 - [Instalação](#instalação)
 - [Configuração](#configuração)
-- [Como executar](#como-executar)
+- [Como Executar](#como-executar)
 - [Testes](#testes)
-- [Autenticação e Segurança](#autenticação-e-segurança)
 - [Endpoints da API](#endpoints-da-api)
-- [Como adicionar um novo domínio](#como-adicionar-um-novo-domínio)
+- [Autenticação e Segurança](#autenticação-e-segurança)
+- [Como Criar um Novo Microserviço](#como-criar-um-novo-microserviço)
 - [Tecnologias](#tecnologias)
 
 ---
 
 ## Arquitetura
 
-O projeto é organizado em torno de um **Message Bus** (barramento de mensagens) que roteia **Commands** e **Events** para seus respectivos handlers:
-
 ```
-API (FastAPI)
-  │
-  ▼
-Bootstrap ──► MessageBus
+┌─────────────┐   ┌─────────────┐   ┌─────────────┐
+│  Core API   │   │  Dentist    │   │   Lawyer    │
+│  :8000      │   │  :8001      │   │   :8002     │
+└──────┬──────┘   └──────┬──────┘   └──────┬──────┘
+       │                 │                  │
+       └────────┬────────┘──────────────────┘
                 │
-        ┌───────┴───────┐
-        ▼               ▼
-   Commands          Events
-   (1 handler)      (N handlers)
-        │               │
-        ▼               ▼
-   Service Layer (Handlers)
-        │
-        ▼
-   Unit of Work + Repositories
-        │
-        ▼
-   PostgreSQL (asyncpg)
+    ┌───────────┴───────────┐
+    │   shared_core (lib)   │  ← User, Company, Auth
+    │   messagebus  (lib)   │  ← Barramento independente
+    │   infra (database)    │  ← Session factory, UoW concreto
+    └───────────┬───────────┘
+                │
+    ┌───────────┴───────────┐
+    │ PostgreSQL            │
+    │  ├── db_dentist       │
+    │  ├── db_lawyer        │
+    │  └── ...              │
+    └───────────────────────┘
 ```
 
-- **Command**: ação imperativa com um único handler (ex: `CreateCompany`). Retorna resultado.
-- **Event**: notificação de algo que aconteceu, pode ter múltiplos handlers (ex: `CompanyCreated`). Não retorna resultado.
-- **Unit of Work (UoW)**: gerencia transações e coleta eventos dos agregados após commit.
-- **Bootstrap**: configura o MessageBus com injeção de dependências nos handlers.
+### Conceitos-chave
+
+- **MessageBus** — Lib independente (zero dependências externas). Roteia Commands e Events para handlers.
+- **Command** — Ação imperativa com um único handler (ex: `CreatePatient`). Retorna resultado.
+- **Event** — Notificação com múltiplos handlers (ex: `PatientCreated`). Não retorna resultado.
+- **Unit of Work (UoW)** — Gerencia transações e coleta eventos dos agregados. Abstração no messagebus, implementação concreta em `infra/database/`.
+- **Bootstrap** — Configura o MessageBus com injeção de dependências nos handlers.
+- **Multi-tenancy** — Um database por tipo de serviço, schemas por empresa (tenant) dentro de cada database.
 
 ---
 
@@ -57,109 +62,111 @@ Bootstrap ──► MessageBus
 
 ```
 barramento_de_mensagens/
-├── messagebus/                    # Core do barramento de mensagens
-│   ├── messagebus.py              # MessageBus, Command, Event
-│   ├── bootstrap.py               # Bootstrap com injeção de dependências
-│   ├── unity_of_work.py           # Unit of Work (abstrato e concreto)
-│   ├── entities.py                # Aggregate, Repositories base, UserBase, UserSecurity
-│   ├── domains.py                 # Enum de domínios e seus repositórios
-│   └── handlers.py                # Registro global de command/event handlers
 │
-├── business_contexts/             # Contexto de negócio (exemplo)
-│   ├── main.py                    # App FastAPI (lifespan, routers)
-│   ├── consts.py                  # Variáveis de ambiente e configurações de segurança
+├── messagebus/                         # LIB INDEPENDENTE: Barramento de mensagens
+│   ├── messagebus.py                   # MessageBus, Command, Event
+│   ├── bootstrap.py                    # Bootstrap com injeção de dependências
+│   ├── unity_of_work.py                # AbstractUnitOfWork (sem dependências de infra)
+│   └── entities.py                     # Aggregate, DomainRepository, ViewRepository, UserBase
+│
+├── shared_core/                        # CORE COMPARTILHADO: usado por todos os microserviços
+│   ├── main.py                         # App FastAPI do core
+│   ├── consts.py                       # Variáveis de ambiente
+│   ├── security.py                     # UserSecurity (criptografia AES-GCM)
+│   ├── bootstrap.py                    # Bootstrap do core
+│   ├── domains.py                      # Enum Domain do core
+│   ├── handlers.py                     # Registro de handlers do core
 │   ├── domain/
-│   │   ├── aggregate/             # Agregados (Company, User, PublicUser)
-│   │   ├── commands/              # Comandos (Create, Update, Delete, AuthenticateUser)
-│   │   ├── events/                # Eventos (Created, Updated, Deleted)
-│   │   ├── entitites/             # Entidades de leitura (User, PublicUser)
-│   │   └── excecoes.py            # Exceções de domínio (HTTPException)
+│   │   ├── aggregate/                  # Company, User, PublicUser
+│   │   ├── commands/                   # CreateCompany, CreateUser, AuthenticateUser
+│   │   ├── events/                     # CompanyCreated, UserCreated, etc.
+│   │   ├── entities/                   # Entidades de leitura
+│   │   └── excecoes.py                 # Exceções de domínio
 │   ├── adapters/
-│   │   ├── orm/                   # Mapeamento imperativo SQLAlchemy (user, public_user, company)
-│   │   ├── repository/
-│   │   │   ├── domain_repo/       # Repositórios de escrita
-│   │   │   ├── view_repo/         # Repositórios de leitura
-│   │   │   └── mixins/            # Mixins de repositório (PublicUserMixin)
-│   │   └── views/                 # Views (consultas via UoW)
+│   │   ├── orm/                        # Mapeamentos ORM
+│   │   ├── repository/                 # Repositórios de escrita e leitura
+│   │   └── views/                      # Views de consulta
 │   ├── entrypoints/
-│   │   ├── api/                   # Routers FastAPI (Company, User, Security)
-│   │   └── schemas/               # Schemas Pydantic (request/response, Token)
+│   │   ├── api/                        # Routers FastAPI (company, user, security)
+│   │   └── schemas/                    # Schemas Pydantic
 │   └── services/
-│       └── handlers/              # Handlers de comandos, eventos e segurança
+│       └── handlers/                   # Handlers de comandos e eventos
+│
+├── services/                           # MICROSERVIÇOS: contextos de negócio isolados
+│   ├── dentist/                        # Serviço: Gestão para Dentistas
+│   │   ├── domain/aggregate/           # Patient
+│   │   ├── domain/commands/            # CreatePatient, UpdatePatient, DeletePatient
+│   │   ├── domain/events/              # PatientCreated, PatientUpdated, PatientDeleted
+│   │   ├── domain/entities/            # Entidades de leitura
+│   │   ├── domain/exceptions.py        # PatientAlreadyRegistered, PatientNotFound
+│   │   ├── adapters/orm/              # Mapeamento ORM do Patient
+│   │   ├── adapters/repository/        # Repositórios de escrita e leitura
+│   │   ├── adapters/views/             # Views de consulta
+│   │   ├── entrypoints/api/            # Router FastAPI (/v1/dentist/patient)
+│   │   ├── entrypoints/schemas/        # Schemas Pydantic
+│   │   ├── services/handlers/          # Handlers de comandos e eventos
+│   │   ├── domains.py                  # DentistDomain enum
+│   │   ├── handlers.py                 # Combina core + dentist handlers
+│   │   ├── bootstrap.py                # bootstrap_dentist()
+│   │   └── main.py                     # App FastAPI (porta 8001)
+│   │
+│   └── lawyer/                         # Serviço: Gestão para Advogados
+│       ├── domain/aggregate/           # LegalCase
+│       ├── domain/commands/            # CreateLegalCase, UpdateLegalCase, DeleteLegalCase
+│       ├── domain/events/              # LegalCaseCreated, LegalCaseUpdated, LegalCaseDeleted
+│       ├── adapters/...                # ORM, repositórios, views
+│       ├── entrypoints/api/            # Router FastAPI (/v1/lawyer/case)
+│       ├── bootstrap.py                # bootstrap_lawyer()
+│       └── main.py                     # App FastAPI (porta 8002)
 │
 ├── infra/
-│   └── database/                  # Engine, session factory, mapper registry
+│   ├── database/                       # Infraestrutura de banco de dados
+│   │   ├── __init__.py                 # Engine, session factory, mapper registry
+│   │   ├── unit_of_work.py             # UnitOfWork concreto (SQLAlchemy)
+│   │   ├── service_registry.py         # Mapeamento service_type → database
+│   │   ├── schema_handlers.py          # Criação de schemas multi-tenant
+│   │   └── initializers.py             # Inicialização da primeira empresa
+│   └── applications/                   # Docker e deploy
+│       ├── docker-compose.infra.yml    # Postgres compartilhado
+│       ├── docker-compose.yml          # Deploy do Core API (:8000)
+│       ├── docker-compose.dentist.yml  # Deploy do Dentist API (:8001)
+│       ├── docker-compose.lawyer.yml   # Deploy do Lawyer API (:8002)
+│       ├── docker-compose.test.yml     # Postgres de testes (:54323)
+│       ├── Dockerfile                  # Imagem do Core
+│       ├── Dockerfile.service          # Imagem genérica para microserviços
+│       └── init-databases.sql          # Script de criação dos databases
 │
 ├── tests/
-│   ├── unit/                      # Testes unitários (agregados, messagebus)
-│   └── integration/               # Testes de integração (fluxo completo com DB)
+│   ├── unit/                           # 152 testes unitários
+│   │   ├── test_company.py
+│   │   ├── test_user.py
+│   │   ├── test_messagebus.py
+│   │   └── test_services/
+│   │       ├── test_dentist/
+│   │       └── test_lawyer/
+│   └── integration/                    # 80 testes de integração
+│       ├── conftest.py
+│       ├── test_company_integration.py
+│       ├── test_user_integration.py
+│       ├── test_auth_integration.py
+│       └── test_services/
+│           ├── test_dentist/
+│           └── test_lawyer/
 │
-├── pyproject.toml                 # Dependências e config do projeto
-├── Dockerfile                     # Imagem Docker (Python 3.11 + uv)
-├── docker-compose.yml             # API + PostgreSQL
-├── docker-compose.test.yml        # PostgreSQL para testes de integração
-└── Makefile                       # Atalhos de comandos
+├── libs/basic_types.py                 # CPF, CNPJ, Email
+├── pyproject.toml                      # Dependências e config
+└── Makefile                            # Gestão de serviços e testes
 ```
 
 ---
 
-## O que foi implementado
+## Serviços Disponíveis
 
-### MessageBus (Core)
-- **`MessageBus`**: processa mensagens (commands/events) em fila, coletando novos eventos gerados durante o processamento.
-- **`Command`** e **`Event`**: classes base (dataclasses) para tipagem de mensagens.
-- **`Bootstrap`**: inicializa o bus com injeção automática de dependências (UoW) nos handlers via introspecção de assinatura.
-- **`Unit of Work`**: gerencia sessões SQLAlchemy (escrita + leitura separadas), transações com commit/rollback, e coleta de eventos dos agregados.
-- **Tratamento de erros**: comandos sempre propagam exceções; eventos podem capturar e enviar ao Sentry em ambientes produtivos.
-
-### Domínios de Negócio
-
-#### Company
-- **Agregado** com campos: `legal_name`, `trade_name`, `responsible_name`, `email`, `cpf`, `cnpj`, `active`.
-- **Operações** `create`, `update`, `delete` — cada uma emite evento correspondente.
-- **Comandos**: `CreateCompany`, `UpdateCompany`, `DeleteCompany`.
-- **Eventos**: `CompanyCreated`, `CompanyUpdated`, `CompanyDeleted`.
-- **Criação automática de usuários**: ao criar uma empresa, eventos `TimeToCreateInitialCompanyUser` e `TimeToCreateCompanyAdminUser` são emitidos (controlável via flag `should_create_user`).
-- **API REST**: CRUD completo via endpoints `/v1/company`.
-- **Validações**: razão social única (409), empresa não encontrada (404).
-
-#### User
-- **Agregado** com campos: `email`, `cpf`, `password`, `active`, `admin`.
-- **Operações** `create`, `update`, `delete` — cada uma emite evento correspondente.
-- **Comandos**: `CreateUser`, `UpdateUser`, `DeleteUser`.
-- **Eventos**: `UserCreated`, `UserUpdated`, `UserDeleted`, `TimeToCreateInitialCompanyUser`, `TimeToCreateCompanyAdminUser`.
-- **API REST**: CRUD completo via endpoints `/v1/user`.
-- **Validações**: email único (409), usuário não encontrado (404).
-- **Relacionamento**: FK para `company`.
-- **Senha hasheada**: `bcrypt` com salt automático na criação do agregado.
-
-#### PublicUser (Usuário Público)
-- **Agregado** com campos: `email_encrypted`, `email_hash`, `password_hash`, `active`.
-- **Tabela no schema `public`**: dados criptografados para autenticação cross-tenant.
-- **Operações**: `register`, `update`, `remove` — sincronizadas automaticamente via eventos do User.
-- **Criptografia AES-GCM** para email, **SHA-256** para hash de busca.
-- **Ciclo de vida automático**: `UserCreated` → `create_public_user`, `UserUpdated` → `update_public_user`, `UserDeleted` → `remove_public_user`.
-
-#### Autenticação e Segurança
-- **JWT (JSON Web Token)** via `PyJWT` com configuração de `SECRET_KEY`, `ALGORITHM` e `ACCESS_TOKEN_EXPIRE_MINUTES`.
-- **OAuth2** com `OAuth2PasswordBearer` e endpoint `/api/token`.
-- **Comando**: `AuthenticateUser` — autentica via usuário público (email hash + bcrypt).
-- **Middleware**: `get_current_user` — decodifica o token JWT e carrega o usuário autenticado via `ContextVar`.
-- **Endpoint** `/api/user/me/` — retorna os dados do usuário autenticado.
-- **Exceção**: `CredentialsException` (401) para tokens inválidos ou usuários não encontrados.
-- **Rotas protegidas**: endpoints de Company e User exigem autenticação via `Depends(get_current_user)`.
-
-### Infraestrutura
-- **PostgreSQL 16** via Docker.
-- **SQLAlchemy async** com `asyncpg` e mapeamento imperativo (ORM).
-- **Separação de sessões**: sessão de escrita (READ COMMITTED) e leitura (AUTOCOMMIT).
-- **Criação automática de tabelas** no lifespan da aplicação.
-- **UUID7** para geração de IDs ordenáveis.
-
-### Testes
-- **Unitários** (112 testes): agregados (User, PublicUser), comandos, eventos, entidades, schemas, MessageBus com fake UoW, UserSecurity (encrypt/decrypt/hash), exceções de domínio, schemas de segurança (Token, TokenData), comando AuthenticateUser.
-- **Integração** (39 testes): fluxo completo (create → view → update → delete) com PostgreSQL de teste, incluindo fluxo empresa → usuários, isolamento multi-empresa e ciclo de vida completo.
-- **Fixtures**: engine com criação de tabelas e limpeza de dados entre testes (per-test scope para evitar problemas de event loop).
+| Serviço | Porta | Descrição | Domínios |
+|---------|-------|-----------|----------|
+| **Core** | 8000 | API principal (empresa, usuário, auth) | Company, User, PublicUser |
+| **Dentist** | 8001 | Gestão para dentistas | Patient |
+| **Lawyer** | 8002 | Gestão para advogados | LegalCase |
 
 ---
 
@@ -173,8 +180,6 @@ barramento_de_mensagens/
 
 ## Instalação
 
-### Local (desenvolvimento)
-
 ```bash
 # Clone o repositório
 git clone <repo-url>
@@ -185,13 +190,6 @@ pip install uv
 
 # Instale as dependências
 uv sync
-```
-
-### Docker
-
-```bash
-# Sobe API + PostgreSQL
-make compose
 ```
 
 ---
@@ -205,6 +203,8 @@ DB_HOST=localhost
 DB_PASSWORD=password
 DB_USER=postgres
 DB_NAME=postgres
+DB_NAME_DENTIST=db_dentist
+DB_NAME_LAWYER=db_lawyer
 FIRST_COMPANY_ID=<uuid>
 FIRST_USER_CPF=<cpf>
 FIRST_USER_EMAIL=<email>
@@ -216,32 +216,50 @@ ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=60
 ```
 
-> No Docker, `DB_HOST` é configurado automaticamente como `postgres` (nome do serviço).
-
 ---
 
-## Como executar
+## Como Executar
 
 ### Via Docker (recomendado)
 
 ```bash
-# API + banco de dados
-make compose
+# Ver todos os comandos disponíveis
+make help
 
-# Apenas o PostgreSQL
-make postgres
+# Subir toda a infraestrutura + todos os serviços
+make deploy-all
+
+# Ou subir serviços individualmente
+make deploy-core       # Core API     → http://localhost:8000/docs
+make deploy-dentist    # Dentist API  → http://localhost:8001/docs
+make deploy-lawyer     # Lawyer API   → http://localhost:8002/docs
+
+# Parar tudo
+make stop-all
+
+# Parar serviço individual
+make stop-dentist
 ```
 
-A API estará disponível em `http://localhost:8000`. Documentação interativa em `http://localhost:8000/docs`.
-
-### Local
+### Dev local (sem Docker)
 
 ```bash
-# Suba o PostgreSQL
-make postgres
+# Suba o Postgres compartilhado
+make infra-up
 
-# Execute a API
-uvicorn business_contexts.main:app --host 0.0.0.0 --port 8000
+# Execute cada serviço em terminais separados
+make run-core          # porta 8000
+make run-dentist       # porta 8001
+make run-lawyer        # porta 8002
+```
+
+### Gestão de Infraestrutura
+
+```bash
+make infra-up          # Sobe Postgres compartilhado (:54322)
+make infra-down        # Para Postgres (preserva dados)
+make infra-destroy     # Para Postgres e remove volumes
+make infra-logs        # Logs do Postgres
 ```
 
 ---
@@ -249,119 +267,115 @@ uvicorn business_contexts.main:app --host 0.0.0.0 --port 8000
 ## Testes
 
 ```bash
-# Testes unitários (sem dependências externas)
+# Testes unitários (152 testes, sem dependências externas)
 make test-unit
 
-# Testes de integração (sobe/desce PostgreSQL de teste automaticamente)
+# Testes de integração (80 testes, sobe/desce PostgreSQL de teste)
 make test-integration
 
-# Todos os testes
+# Todos os testes (232 testes)
 make test-all
+
+# Testes com cobertura
+make test-cov
+
+# Testes de um serviço específico
+make test-dentist
+make test-lawyer
 ```
 
 ---
 
 ## Endpoints da API
 
-### Health Check
+### Core API (porta 8000)
+
+#### Health Check
 | Método | Rota | Descrição |
 |--------|------|-----------|
 | GET | `/` | Health check |
 
-### Company (`/v1/company`)
+#### Company (`/v1/company`)
 | Método | Rota | Descrição |
 |--------|------|-----------|
 | POST | `/v1/company` | Cria uma empresa |
 | PUT | `/v1/company` | Atualiza uma empresa |
-| GET | `/v1/company` | Lista empresas (filtro opcional por `legal_name`) |
-| DELETE | `/v1/company` | Exclui uma empresa por `legal_name` |
+| GET | `/v1/company` | Lista empresas (filtro por `legal_name`) |
+| DELETE | `/v1/company` | Exclui uma empresa |
 
-### User (`/v1/user`)
+#### User (`/v1/user`)
 | Método | Rota | Descrição |
 |--------|------|-----------|
 | POST | `/v1/user` | Cria um usuário |
 | PUT | `/v1/user` | Atualiza um usuário |
-| GET | `/v1/user` | Lista usuários (filtro opcional por `email`) |
-| DELETE | `/v1/user` | Exclui um usuário por `email` |
+| GET | `/v1/user` | Lista usuários (filtro por `email`) |
+| DELETE | `/v1/user` | Exclui um usuário |
 
-### Autenticação (`/api`)
+#### Autenticação (`/api`)
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| POST | `/api/token` | Autentica e retorna token JWT (OAuth2) |
+| POST | `/api/token` | Autentica e retorna token JWT |
 | GET | `/api/user/me/` | Retorna dados do usuário autenticado |
+
+### Dentist API (porta 8001)
+
+Inclui todos os endpoints do Core mais:
+
+#### Patient (`/v1/dentist/patient`)
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| POST | `/v1/dentist/patient` | Cria um paciente |
+| PUT | `/v1/dentist/patient` | Atualiza um paciente |
+| GET | `/v1/dentist/patient` | Lista pacientes (filtro por `cpf`) |
+| DELETE | `/v1/dentist/patient` | Exclui um paciente |
+
+### Lawyer API (porta 8002)
+
+Inclui todos os endpoints do Core mais:
+
+#### Legal Case (`/v1/lawyer/case`)
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| POST | `/v1/lawyer/case` | Cria um processo jurídico |
+| PUT | `/v1/lawyer/case` | Atualiza um processo |
+| GET | `/v1/lawyer/case` | Lista processos (filtro por `case_number`) |
+| DELETE | `/v1/lawyer/case` | Exclui um processo |
 
 ---
 
-## Como adicionar um novo domínio
+## Autenticação e Segurança
 
-Para adicionar um novo domínio (ex: `Product`), siga estes passos:
+- **JWT** via `PyJWT` com `SECRET_KEY`, `ALGORITHM` e `ACCESS_TOKEN_EXPIRE_MINUTES`.
+- **OAuth2** com `OAuth2PasswordBearer` e endpoint `/api/token`.
+- **Criptografia AES-GCM** para emails em trânsito, **SHA-256** para hash de busca.
+- **bcrypt** para hash de senhas.
+- **PublicUser** — tabela no schema `public` para autenticação cross-tenant.
+- **Rotas protegidas** — todos os endpoints de negócio exigem autenticação via `Depends(get_current_user)`.
 
-### 1. Criar o agregado
+---
 
-Crie `business_contexts/domain/aggregate/product.py`:
+## Como Criar um Novo Microserviço
 
-```python
-@dataclass
-class Product(Aggregate):
-    id: UUID
-    name: str
-    price: float
-
-    def __hash__(self) -> int:
-        return hash(self.id)
-
-    @staticmethod
-    def create_aggregate(name: str, price: float) -> "Product":
-        return Product(id=uuid7.create(), name=name, price=price)
-
-    def create(self) -> None:
-        self._operation_type = OperationType.INSERT
-        self.add_event(ProductCreated(id=self.id))
-```
-
-### 2. Criar comandos e eventos
-
-- `business_contexts/domain/commands/product.py` — ex: `CreateProduct(Command)`
-- `business_contexts/domain/events/product.py` — ex: `ProductCreated(Event)`
-
-### 3. Criar o mapeamento ORM
-
-Crie `business_contexts/adapters/orm/product.py` com a `Table` e o `map_imperatively`. Importe-o em `business_contexts/adapters/orm/__init__.py`.
-
-### 4. Criar repositórios
-
-- `business_contexts/adapters/repository/domain_repo/product.py` — repositório de escrita
-- `business_contexts/adapters/repository/view_repo/product.py` — repositório de leitura
-
-### 5. Registrar o domínio
-
-Em `messagebus/domains.py`, adicione:
-
-```python
-class Domain(Enum):
-    product = (ProductDomainRepo, ProductViewRepo)
-```
-
-### 6. Criar handlers
-
-Crie `business_contexts/services/handlers/product.py` com os handlers de comando e evento.
-
-### 7. Registrar handlers
-
-Em `messagebus/handlers.py`, adicione os comandos e eventos nos dicionários `COMMAND_HANDLERS` e `EVENT_HANDLERS`.
-
-### 8. Criar endpoints, schemas e views
-
-- `business_contexts/entrypoints/api/product.py` — router FastAPI
-- `business_contexts/entrypoints/schemas/product.py` — schemas Pydantic
-- `business_contexts/adapters/views/product.py` — view de consulta
-
-Inclua o router em `business_contexts/main.py`.
-
-### 9. Criar testes
-
-- `tests/unit/test_product.py` — testes do agregado, comandos e eventos
-- `tests/integration/test_product_integration.py` — testes de fluxo completo
+1. **Criar pasta** `services/<nome>/` com a estrutura padrão (domain, adapters, entrypoints, services).
+2. **Registrar database** em `infra/database/service_registry.py`:
+   ```python
+   SERVICE_DATABASES = {
+       ...,
+       "<nome>": {"db_name": "db_<nome>"},
+   }
+   ```
+3. **Criar `domains.py`** — enum mapeando domínios para repositórios.
+4. **Criar `handlers.py`** — combinar handlers do `shared_core` + handlers específicos.
+5. **Criar `bootstrap.py`** — inicializar o MessageBus com `SERVICE_TYPE="<nome>"`.
+6. **Criar `main.py`** — app FastAPI incluindo routers do core + específicos.
+7. **Criar docker-compose** em `infra/applications/docker-compose.<nome>.yml`.
+8. **Adicionar SQL** em `infra/applications/init-databases.sql`:
+   ```sql
+   SELECT 'CREATE DATABASE db_<nome>' WHERE NOT EXISTS (...);
+   ```
+9. **Adicionar ao Makefile** — targets `deploy-<nome>`, `stop-<nome>`, `logs-<nome>`, `test-<nome>`.
+10. **Criar testes** em `tests/unit/test_services/test_<nome>/` e `tests/integration/test_services/test_<nome>/`.
+11. **Registrar ORM** no `tests/integration/conftest.py`.
 
 ---
 
@@ -376,26 +390,41 @@ Inclua o router em `business_contexts/main.py`.
 | **PostgreSQL 16** | Banco de dados relacional |
 | **Pydantic** | Validação de schemas |
 | **uuid7** | Geração de UUIDs ordenáveis |
+| **PyJWT** | Tokens JWT |
+| **bcrypt** | Hash de senhas |
+| **cryptography** | Criptografia AES-GCM |
 | **Sentry SDK** | Monitoramento de erros (produção) |
 | **uv** | Gerenciador de pacotes e virtualenv |
 | **Docker** | Containerização |
 | **pytest** | Framework de testes |
 | **Ruff** | Linter e formatter |
-| **PyJWT** | Geração e validação de tokens JWT |
-| **bcrypt** | Hash de senhas |
-| **cryptography** | Criptografia AES-GCM para emails |
-| **passlib** | Contexto de criptografia de senhas |
 
 ---
 
-## Comandos úteis (Makefile)
+## Comandos Úteis (Makefile)
 
 ```bash
-make ruff              # Formata e lint do código
-make compose           # Sobe API + PostgreSQL via Docker
-make postgres          # Sobe apenas o PostgreSQL
-make test-unit         # Testes unitários
-make test-integration  # Testes de integração
-make test-all          # Todos os testes
-make docker-clean      # Limpa imagens/containers Docker
+# Infraestrutura
+make infra-up            # Sobe Postgres compartilhado
+make infra-destroy       # Remove Postgres e volumes
+
+# Deploy
+make deploy-all          # Todos os serviços
+make deploy-dentist      # Apenas dentista
+make stop-all            # Para tudo
+
+# Dev local
+make run-core            # Core na porta 8000
+make run-dentist         # Dentist na porta 8001
+make run-lawyer          # Lawyer na porta 8002
+
+# Testes
+make test-unit           # Unitários (152)
+make test-integration    # Integração (80)
+make test-all            # Todos (232)
+make test-cov            # Com cobertura
+
+# Qualidade
+make ruff                # Formata e corrige lint
+make check               # Lint + type-check
 ```

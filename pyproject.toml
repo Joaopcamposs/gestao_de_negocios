@@ -42,7 +42,7 @@ addopts = "-ra -q"
 
 # ── Coverage ────────────────────────────────────────────────────────
 [tool.coverage.run]
-source = ["business_contexts", "infra", "messagebus", "libs"]
+source = ["shared_core", "services", "infra", "messagebus", "libs"]
 omit = ["tests/*"]
 
 [tool.coverage.report]
@@ -81,7 +81,7 @@ ignore = [
 "tests/*" = ["S", "T20"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["business_contexts", "infra", "messagebus", "libs"]
+known-first-party = ["shared_core", "services", "infra", "messagebus", "libs"]
 
 # ── Mypy ────────────────────────────────────────────────────────────
 [tool.mypy]

@@ -6,13 +6,13 @@ from uuid import UUID
 import jwt
 import pytest
 
-from business_contexts.consts import ALGORITHM, SECRET_KEY
-from business_contexts.domain.commands.company import CreateCompany
-from business_contexts.domain.commands.security import AuthenticateUser
-from business_contexts.domain.excecoes import CredentialsException
-from business_contexts.entrypoints.schemas.security import Token
-from business_contexts.services.handlers.security import get_current_user
-from messagebus.bootstrap import bootstrap
+from shared_core.consts import ALGORITHM, SECRET_KEY
+from shared_core.domain.commands.company import CreateCompany
+from shared_core.domain.commands.security import AuthenticateUser
+from shared_core.domain.excecoes import CredentialsException
+from shared_core.entrypoints.schemas.security import Token
+from shared_core.services.handlers.security import get_current_user
+from shared_core.bootstrap import bootstrap
 
 
 async def _create_company_with_user(

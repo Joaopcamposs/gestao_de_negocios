@@ -4,34 +4,35 @@ from uuid import UUID
 
 import uuid7
 
-from messagebus.entities import Aggregate, OperationType, UserSecurity
+from messagebus.entities import Aggregate, OperationType
+from shared_core.security import UserSecurity
 
 _TEST_COMPANY_ID = uuid7.create()
-from business_contexts.domain.aggregate.user import PublicUser, User
-from business_contexts.domain.commands.security import AuthenticateUser
-from business_contexts.domain.commands.user import (
+from shared_core.domain.aggregate.user import PublicUser, User
+from shared_core.domain.commands.security import AuthenticateUser
+from shared_core.domain.commands.user import (
     CreateUser,
     DeleteUser,
     UpdateUser,
 )
-from business_contexts.domain.entitites.user import PublicUser as PublicUserEntity
-from business_contexts.domain.entitites.user import User as UserEntity
-from business_contexts.domain.events.user import (
+from shared_core.domain.entities.user import PublicUser as PublicUserEntity
+from shared_core.domain.entities.user import User as UserEntity
+from shared_core.domain.events.user import (
     TimeToCreateCompanyAdminUser,
     TimeToCreateInitialCompanyUser,
     UserCreated,
     UserDeleted,
     UserUpdated,
 )
-from business_contexts.domain.excecoes import (
+from shared_core.domain.excecoes import (
     CompanyAlreadyRegistered,
     CompanyNotFound,
     CredentialsException,
     UserAlreadyRegistered,
     UserNotFound,
 )
-from business_contexts.entrypoints.schemas.security import Token, TokenData
-from business_contexts.entrypoints.schemas.user import (
+from shared_core.entrypoints.schemas.security import Token, TokenData
+from shared_core.entrypoints.schemas.user import (
     CreateUserSchema,
     ReadUserSchema,
     UpdateUserSchema,
