@@ -52,9 +52,9 @@ O projeto original era monolítico com acoplamento entre o barramento de mensage
 - `Dockerfile.service` genérico com `SERVICE_MODULE` parametrizável
 
 ### 📋 Makefile Completo
-- `make deploy-core/dentist/lawyer` — deploy individual (auto sobe infra)
+- `make deploy-dentist/lawyer` — deploy individual (auto sobe infra)
 - `make deploy-all` / `stop-all` — gestão em lote
-- `make run-core/dentist/lawyer` — dev local sem Docker
+- `make run-dentist/lawyer` — dev local sem Docker
 - `make test-dentist/lawyer` — testes isolados por serviço
 - `make help` — documentação inline de todos os comandos
 
@@ -69,12 +69,12 @@ O projeto original era monolítico com acoplamento entre o barramento de mensage
 ## Arquitetura
 
 ```
-┌─────────────┐   ┌─────────────┐   ┌─────────────┐
-│  Core API   │   │  Dentist    │   │   Lawyer    │
-│  :8000      │   │  :8001      │   │   :8002     │
-└──────┬──────┘   └──────┬──────┘   └──────┬──────┘
-       │                 │                  │
-       └────────┬────────┘──────────────────┘
+┌─────────────┐   ┌─────────────┐
+│  Dentist    │   │   Lawyer    │
+│  :8001      │   │   :8002     │
+└──────┬──────┘   └──────┬──────┘
+       │                 │
+       └────────┬────────┘
                 │
     ┌───────────┴───────────┐
     │   shared_core (lib)   │
@@ -96,7 +96,7 @@ O projeto original era monolítico com acoplamento entre o barramento de mensage
 - `business_contexts` → `shared_core` (todos os imports)
 - `messagebus.entities.UserSecurity` → `shared_core.security.UserSecurity`
 - Docker compose files movidos para `infra/applications/`
-- Comandos do Makefile renomeados (`compose` → `deploy-core`, etc.)
+- Comandos do Makefile renomeados (`compose` → `deploy-dentist`, etc.)
 
 ## Checklist
 
@@ -109,4 +109,4 @@ O projeto original era monolítico com acoplamento entre o barramento de mensage
 - [x] Makefile com gestão independente por serviço
 - [x] 232 testes passando (152 unit + 80 integration)
 - [x] README e ARCHITECTURE.md atualizados
-- [x] Deploy verificado (3 serviços rodando simultaneamente em portas diferentes)
+- [x] Deploy verificado (2 serviços rodando simultaneamente em portas diferentes)

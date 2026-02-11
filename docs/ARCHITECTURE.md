@@ -75,11 +75,9 @@ barramento_de_mensagens/
 │   │   └── initializers.py             # Inicialização da primeira empresa
 │   └── applications/                   # Docker e deploy
 │       ├── docker-compose.infra.yml    # Postgres compartilhado (rede barramento_network)
-│       ├── docker-compose.yml          # Core API (:8000)
 │       ├── docker-compose.dentist.yml  # Dentist API (:8001)
 │       ├── docker-compose.lawyer.yml   # Lawyer API (:8002)
 │       ├── docker-compose.test.yml     # Postgres de testes (:54323)
-│       ├── Dockerfile                  # Imagem do Core
 │       ├── Dockerfile.service          # Imagem genérica para microserviços
 │       └── init-databases.sql          # Criação dos databases (db_dentist, db_lawyer)
 │
@@ -148,7 +146,6 @@ SERVICE_DATABASES = {
 
 ```
 docker-compose.infra.yml     → Postgres compartilhado (rede barramento_network, porta 54322)
-docker-compose.yml           → Core API (porta 8000, rede externa barramento_network)
 docker-compose.dentist.yml   → Dentist API (porta 8001, rede externa barramento_network)
 docker-compose.lawyer.yml    → Lawyer API (porta 8002, rede externa barramento_network)
 ```

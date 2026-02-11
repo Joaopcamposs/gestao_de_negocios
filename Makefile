@@ -30,17 +30,6 @@ infra-destroy:
 infra-logs:
 	docker compose -f $(INFRA)/docker-compose.infra.yml -p $(COMPOSE_NAME)_infra logs -f
 
-# ── Deploy: Core (porta 8000) ─────────────────────────────────────
-deploy-core: infra-up
-	docker compose -f $(INFRA)/docker-compose.yml -p $(COMPOSE_NAME)_core up --build -d
-	@echo "✔ Core API rodando em http://localhost:8000/docs"
-
-stop-core:
-	docker compose -f $(INFRA)/docker-compose.yml -p $(COMPOSE_NAME)_core down
-
-logs-core:
-	docker compose -f $(INFRA)/docker-compose.yml -p $(COMPOSE_NAME)_core logs -f
-
 # ── Deploy: Dentist (porta 8001) ──────────────────────────────────
 deploy-dentist: infra-up
 	docker compose -f $(INFRA)/docker-compose.dentist.yml -p $(COMPOSE_NAME)_dentist up --build -d
@@ -64,20 +53,16 @@ logs-lawyer:
 	docker compose -f $(INFRA)/docker-compose.lawyer.yml -p $(COMPOSE_NAME)_lawyer logs -f
 
 # ── Deploy: Todos ─────────────────────────────────────────────────
-deploy-all: deploy-core deploy-dentist deploy-lawyer
+deploy-all: deploy-dentist deploy-lawyer
 	@echo ""
 	@echo "  ✔ Todos os serviços rodando:"
-	@echo "    Core    → http://localhost:8000/docs"
 	@echo "    Dentist → http://localhost:8001/docs"
 	@echo "    Lawyer  → http://localhost:8002/docs"
 
-stop-all: stop-core stop-dentist stop-lawyer infra-down
+stop-all: stop-dentist stop-lawyer infra-down
 	@echo "✔ Todos os serviços e infra parados."
 
 # ── Dev local (sem Docker, requer postgres local) ─────────────────
-run-core:
-	uvicorn shared_core.main:app --host 0.0.0.0 --port 8000 --reload
-
 run-dentist:
 	uvicorn services.dentist.main:app --host 0.0.0.0 --port 8001 --reload
 
@@ -130,28 +115,24 @@ help:
 	@echo ""
 	@echo "  Deploy (Docker) — cada serviço sobe infra automaticamente"
 	@echo "  ──────────────────────────────────────────────────"
-	@echo "  make deploy-core       → Core API         http://localhost:8000/docs"
 	@echo "  make deploy-dentist    → Dentist API      http://localhost:8001/docs"
 	@echo "  make deploy-lawyer     → Lawyer API       http://localhost:8002/docs"
 	@echo "  make deploy-all        → Todos os serviços"
 	@echo ""
 	@echo "  Parar serviços"
 	@echo "  ──────────────────────────────────────────────────"
-	@echo "  make stop-core         → Para Core"
 	@echo "  make stop-dentist      → Para Dentist"
 	@echo "  make stop-lawyer       → Para Lawyer"
 	@echo "  make stop-all          → Para tudo (serviços + infra)"
 	@echo ""
 	@echo "  Logs"
 	@echo "  ──────────────────────────────────────────────────"
-	@echo "  make logs-core         → Logs do Core"
 	@echo "  make logs-dentist      → Logs do Dentist"
 	@echo "  make logs-lawyer       → Logs do Lawyer"
 	@echo "  make infra-logs        → Logs do Postgres"
 	@echo ""
 	@echo "  Dev local (sem Docker)"
 	@echo "  ──────────────────────────────────────────────────"
-	@echo "  make run-core          → Core na porta 8000"
 	@echo "  make run-dentist       → Dentist na porta 8001"
 	@echo "  make run-lawyer        → Lawyer na porta 8002"
 	@echo ""

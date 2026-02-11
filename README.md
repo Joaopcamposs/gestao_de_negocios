@@ -26,12 +26,12 @@ Cada profissão é um **microserviço independente** com deploy isolado, compart
 ## Arquitetura
 
 ```
-┌─────────────┐   ┌─────────────┐   ┌─────────────┐
-│  Core API   │   │  Dentist    │   │   Lawyer    │
-│  :8000      │   │  :8001      │   │   :8002     │
-└──────┬──────┘   └──────┬──────┘   └──────┬──────┘
-       │                 │                  │
-       └────────┬────────┘──────────────────┘
+┌─────────────┐   ┌─────────────┐
+│  Dentist    │   │   Lawyer    │
+│  :8001      │   │   :8002     │
+└──────┬──────┘   └──────┬──────┘
+       │                 │
+       └────────┬────────┘
                 │
     ┌───────────┴───────────┐
     │   shared_core (lib)   │  ← User, Company, Auth
@@ -70,7 +70,6 @@ barramento_de_mensagens/
 │   └── entities.py                     # Aggregate, DomainRepository, ViewRepository, UserBase
 │
 ├── shared_core/                        # CORE COMPARTILHADO: usado por todos os microserviços
-│   ├── main.py                         # App FastAPI do core
 │   ├── consts.py                       # Variáveis de ambiente
 │   ├── security.py                     # UserSecurity (criptografia AES-GCM)
 │   ├── bootstrap.py                    # Bootstrap do core
@@ -128,11 +127,9 @@ barramento_de_mensagens/
 │   │   └── initializers.py             # Inicialização da primeira empresa
 │   └── applications/                   # Docker e deploy
 │       ├── docker-compose.infra.yml    # Postgres compartilhado
-│       ├── docker-compose.yml          # Deploy do Core API (:8000)
 │       ├── docker-compose.dentist.yml  # Deploy do Dentist API (:8001)
 │       ├── docker-compose.lawyer.yml   # Deploy do Lawyer API (:8002)
 │       ├── docker-compose.test.yml     # Postgres de testes (:54323)
-│       ├── Dockerfile                  # Imagem do Core
 │       ├── Dockerfile.service          # Imagem genérica para microserviços
 │       └── init-databases.sql          # Script de criação dos databases
 │
@@ -164,9 +161,10 @@ barramento_de_mensagens/
 
 | Serviço | Porta | Descrição | Domínios |
 |---------|-------|-----------|----------|
-| **Core** | 8000 | API principal (empresa, usuário, auth) | Company, User, PublicUser |
-| **Dentist** | 8001 | Gestão para dentistas | Patient |
-| **Lawyer** | 8002 | Gestão para advogados | LegalCase |
+| **Dentist** | 8001 | Gestão para dentistas | Company, User, Auth + Patient |
+| **Lawyer** | 8002 | Gestão para advogados | Company, User, Auth + LegalCase |
+
+Cada serviço inclui automaticamente os endpoints do `shared_core` (empresa, usuário, autenticação) além dos seus endpoints específicos.
 
 ---
 
@@ -230,7 +228,6 @@ make help
 make deploy-all
 
 # Ou subir serviços individualmente
-make deploy-core       # Core API     → http://localhost:8000/docs
 make deploy-dentist    # Dentist API  → http://localhost:8001/docs
 make deploy-lawyer     # Lawyer API   → http://localhost:8002/docs
 
@@ -248,7 +245,6 @@ make stop-dentist
 make infra-up
 
 # Execute cada serviço em terminais separados
-make run-core          # porta 8000
 make run-dentist       # porta 8001
 make run-lawyer        # porta 8002
 ```
@@ -288,38 +284,23 @@ make test-lawyer
 
 ## Endpoints da API
 
-### Core API (porta 8000)
+### Endpoints Compartilhados (todos os serviços)
 
-#### Health Check
 | Método | Rota | Descrição |
 |--------|------|-----------|
 | GET | `/` | Health check |
-
-#### Company (`/v1/company`)
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| POST | `/v1/company` | Cria uma empresa |
-| PUT | `/v1/company` | Atualiza uma empresa |
-| GET | `/v1/company` | Lista empresas (filtro por `legal_name`) |
-| DELETE | `/v1/company` | Exclui uma empresa |
-
-#### User (`/v1/user`)
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| POST | `/v1/user` | Cria um usuário |
-| PUT | `/v1/user` | Atualiza um usuário |
-| GET | `/v1/user` | Lista usuários (filtro por `email`) |
-| DELETE | `/v1/user` | Exclui um usuário |
-
-#### Autenticação (`/api`)
-| Método | Rota | Descrição |
-|--------|------|-----------|
 | POST | `/api/token` | Autentica e retorna token JWT |
 | GET | `/api/user/me/` | Retorna dados do usuário autenticado |
+| POST | `/v1/company` | Cria uma empresa |
+| PUT | `/v1/company` | Atualiza uma empresa |
+| GET | `/v1/company` | Lista empresas |
+| DELETE | `/v1/company` | Exclui uma empresa |
+| POST | `/v1/user` | Cria um usuário |
+| PUT | `/v1/user` | Atualiza um usuário |
+| GET | `/v1/user` | Lista usuários |
+| DELETE | `/v1/user` | Exclui um usuário |
 
 ### Dentist API (porta 8001)
-
-Inclui todos os endpoints do Core mais:
 
 #### Patient (`/v1/dentist/patient`)
 | Método | Rota | Descrição |
@@ -330,8 +311,6 @@ Inclui todos os endpoints do Core mais:
 | DELETE | `/v1/dentist/patient` | Exclui um paciente |
 
 ### Lawyer API (porta 8002)
-
-Inclui todos os endpoints do Core mais:
 
 #### Legal Case (`/v1/lawyer/case`)
 | Método | Rota | Descrição |
@@ -414,7 +393,6 @@ make deploy-dentist      # Apenas dentista
 make stop-all            # Para tudo
 
 # Dev local
-make run-core            # Core na porta 8000
 make run-dentist         # Dentist na porta 8001
 make run-lawyer          # Lawyer na porta 8002
 
