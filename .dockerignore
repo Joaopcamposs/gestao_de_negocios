@@ -1,1 +1,32 @@
+# IDEs
 .idea
+.vscode
+*.swp
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Git
+.git/
+.gitignore
+
+# Docker
+infra/applications/docker-compose*.yml
+
+# Testes e docs (não necessários em produção)
+tests/
+docs/
+PR_DESCRIPTION.md
+
+# Outros
+.env
+*.md
+!README.md
+.pre-commit-config.yaml

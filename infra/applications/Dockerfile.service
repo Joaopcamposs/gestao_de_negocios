@@ -1,20 +1,31 @@
-FROM python:3.11.9-slim
+# ── Stage 1: Instala dependências (cacheable) ────────────────────────
+FROM python:3.11.9-slim AS deps
 
-# Cria diretório da app
 WORKDIR /barramento_de_mensagens
 
-# Instalações básicas
-RUN apt-get update && apt-get install -y curl build-essential
+RUN pip install --no-cache-dir uv
 
-# Copia a aplicação
-COPY . .
+# Copia apenas arquivos de dependência para cache de layer
+COPY pyproject.toml uv.lock* ./
 
-# Instala dependências
-RUN pip install --upgrade pip
-RUN pip install uv
-RUN uv sync
+# Instala somente dependências de produção (sem dev)
+RUN uv sync --no-dev --no-install-project
 
-# Adiciona o .venv/bin ao PATH do container
+# ── Stage 2: Imagem final leve ───────────────────────────────────────
+FROM python:3.11.9-slim
+
+WORKDIR /barramento_de_mensagens
+
+# Copia o venv com dependências já instaladas
+COPY --from=deps /barramento_de_mensagens/.venv .venv/
+
+# Copia código-fonte da aplicação
+COPY messagebus/ messagebus/
+COPY shared_core/ shared_core/
+COPY services/ services/
+COPY infra/ infra/
+COPY libs/ libs/
+
 ENV PATH="/barramento_de_mensagens/.venv/bin:$PATH"
 ENV PYTHONPATH=/barramento_de_mensagens
 
@@ -22,5 +33,4 @@ ENV PYTHONPATH=/barramento_de_mensagens
 ARG SERVICE_MODULE=services.dentist.main:app
 ENV SERVICE_MODULE=${SERVICE_MODULE}
 
-# Comando padrão
-CMD uvicorn ${SERVICE_MODULE} --host 0.0.0.0 --port 8000
+CMD ["sh", "-c", "uvicorn ${SERVICE_MODULE} --host 0.0.0.0 --port 8000"]
