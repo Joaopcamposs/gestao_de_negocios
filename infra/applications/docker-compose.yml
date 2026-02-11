@@ -1,0 +1,19 @@
+services:
+  core-api:
+    build:
+      context: ../..
+      dockerfile: infra/applications/Dockerfile
+    container_name: barramento_core_api
+    ports:
+      - "8000:8000"
+    environment:
+      - IN_DOCKER=true
+      - DB_HOST=barramento_postgres
+    env_file:
+      - ../../.env
+    networks:
+      - barramento_network
+
+networks:
+  barramento_network:
+    external: true

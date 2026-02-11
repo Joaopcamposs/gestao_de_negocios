@@ -1,20 +1,7 @@
 services:
-  api:
-    build:
-      context: .
-    container_name: fastapi_app
-    ports:
-      - "8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      - IN_DOCKER=true
-      - DB_HOST=postgres
-
   postgres:
     image: postgres:16
-    container_name: postgres_db
+    container_name: barramento_postgres
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
@@ -26,3 +13,15 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    networks:
+      - barramento_network
+
+volumes:
+  pgdata:
+
+networks:
+  barramento_network:
+    name: barramento_network

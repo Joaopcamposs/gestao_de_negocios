@@ -19,4 +19,4 @@ ENV PATH="/barramento_de_mensagens/.venv/bin:$PATH"
 ENV PYTHONPATH=/barramento_de_mensagens
 
 # Comando padrão
-CMD ["uvicorn", "business_contexts.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "shared_core.main:app", "--host", "0.0.0.0", "--port", "8000"]
