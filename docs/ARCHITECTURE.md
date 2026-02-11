@@ -188,3 +188,26 @@ docker-compose.lawyer.yml    → Lawyer API (porta 8002, rede externa barramento
 - **Código em inglês, docstrings em português** — padrão do projeto.
 - **Tipagem forte** — type hints em todo o código.
 - **Testes sempre** — unitários + integração para cada contexto.
+
+
+## Melhorias
+
+## Otimizações aplicadas
+
+### [.dockerignore](cci:7://file:///Users/joaopcamposs/Dev/barramento_de_mensagens/.dockerignore:0:0-0:0) — Build context ~190MB menor
+Excluídos: `.venv/`, `.git/`, `tests/`, `docs/`, `__pycache__/`, `.mypy_cache/`, `.pytest_cache/`, `.ruff_cache/`, `.env`
+
+### [Dockerfile.service](cci:7://file:///Users/joaopcamposs/Dev/barramento_de_mensagens/infra/applications/Dockerfile.service:0:0-0:0) — Multi-stage build
+
+| Aspecto | Antes | Depois |
+|---------|-------|--------|
+| **Imagem final** | 1.1GB | 246MB |
+| **Rebuild (cache)** | ~15s | ~1.7s |
+| **apt build-essential** | Instalado (produção) | Removido |
+| **Dev deps** (ruff, mypy, pytest) | Incluídas | Excluídas |
+| **Stages** | 1 | 2 (deps + final) |
+| **Layer caching** | Nenhum (COPY . . antes de deps) | [pyproject.toml](cci:7://file:///Users/joaopcamposs/Dev/barramento_de_mensagens/pyproject.toml:0:0-0:0) copiado primeiro |
+
+### Como funciona o cache
+1. **Stage `deps`** — copia só [pyproject.toml](cci:7://file:///Users/joaopcamposs/Dev/barramento_de_mensagens/pyproject.toml:0:0-0:0) + `uv.lock` → instala deps → **cacheado enquanto deps não mudam**
+2. **Stage final** — copia venv pronta + código-fonte → **rebuild em <2s quando só muda código**
