@@ -69,7 +69,24 @@ class LegalCase(Aggregate):
     def create(self) -> None:
         """Marca o agregado para inserção e emite evento de criação."""
         self._operation_type = OperationType.INSERT
-        self.add_event(LegalCaseCreated(id=self.id, company=self.company))
+
+        new_data = {
+            "case_number": self.case_number,
+            "client_name": self.client_name,
+            "description": self.description,
+            "status": self.status,
+            "open_date": str(self.open_date) if self.open_date else None,
+            "notes": self.notes,
+        }
+
+        self.add_event(
+            LegalCaseCreated(
+                id=self.id,
+                company=self.company,
+                entity_type="LegalCase",
+                new_data=new_data,
+            )
+        )
 
     def update(
         self,
@@ -89,19 +106,56 @@ class LegalCase(Aggregate):
         """
         self._operation_type = OperationType.UPDATE
 
+        old_data: dict = {}
+        new_data: dict = {}
+
         if client_name is not None:
+            old_data["client_name"] = self.client_name
+            new_data["client_name"] = client_name
             self.client_name = client_name
         if description is not None:
+            old_data["description"] = self.description
+            new_data["description"] = description
             self.description = description
         if status is not None:
+            old_data["status"] = self.status
+            new_data["status"] = status
             self.status = status
         if notes is not None:
+            old_data["notes"] = self.notes
+            new_data["notes"] = notes
             self.notes = notes
 
-        self.add_event(LegalCaseUpdated(id=self.id, company=self.company))
+        self.add_event(
+            LegalCaseUpdated(
+                id=self.id,
+                company=self.company,
+                entity_type="LegalCase",
+                old_data=old_data,
+                new_data=new_data,
+            )
+        )
 
     def delete(self) -> None:
         """Marca o agregado como deletado (soft delete) e emite evento de exclusão."""
         self._operation_type = OperationType.DELETE
+
+        old_data = {
+            "case_number": self.case_number,
+            "client_name": self.client_name,
+            "description": self.description,
+            "status": self.status,
+            "open_date": str(self.open_date) if self.open_date else None,
+            "notes": self.notes,
+        }
+
         self.deleted = True
-        self.add_event(LegalCaseDeleted(id=self.id, company=self.company))
+
+        self.add_event(
+            LegalCaseDeleted(
+                id=self.id,
+                company=self.company,
+                entity_type="LegalCase",
+                old_data=old_data,
+            )
+        )

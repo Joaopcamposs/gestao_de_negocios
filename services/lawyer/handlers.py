@@ -27,6 +27,11 @@ from shared_core.handlers import (
     COMMAND_HANDLERS as CORE_COMMAND_HANDLERS,
     EVENT_HANDLERS as CORE_EVENT_HANDLERS,
 )
+from shared_core.services.handlers.audit_log import (
+    audit_entity_created,
+    audit_entity_deleted,
+    audit_entity_updated,
+)
 
 COMMAND_HANDLERS: CommandHandlers = CommandHandlers(
     {
@@ -40,8 +45,8 @@ COMMAND_HANDLERS: CommandHandlers = CommandHandlers(
 EVENT_HANDLERS: EventHandlers = EventHandlers(
     {
         **CORE_EVENT_HANDLERS,
-        LegalCaseCreated: [legal_case_created],
-        LegalCaseUpdated: [legal_case_updated],
-        LegalCaseDeleted: [legal_case_deleted],
+        LegalCaseCreated: [legal_case_created, audit_entity_created],
+        LegalCaseUpdated: [legal_case_updated, audit_entity_updated],
+        LegalCaseDeleted: [legal_case_deleted, audit_entity_deleted],
     }
 )

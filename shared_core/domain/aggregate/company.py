@@ -101,9 +101,21 @@ class Company(Aggregate):
         """
         self._operation_type = OperationType.INSERT
 
+        new_data = {
+            "legal_name": self.legal_name,
+            "trade_name": self.trade_name,
+            "responsible_name": self.responsible_name,
+            "email": self.email,
+            "cpf": self.cpf,
+            "cnpj": self.cnpj,
+            "active": self.active,
+        }
+
         self.add_event(
             CompanyCreated(
                 id=self.id,
+                entity_type="Company",
+                new_data=new_data,
             )
         )
 
@@ -147,20 +159,36 @@ class Company(Aggregate):
         """
         self._operation_type = OperationType.UPDATE
 
+        old_data: dict = {}
+        new_data: dict = {}
+
         if legal_name is not None:
+            old_data["legal_name"] = self.legal_name
+            new_data["legal_name"] = legal_name
             self.legal_name = legal_name
         if trade_name is not None:
+            old_data["trade_name"] = self.trade_name
+            new_data["trade_name"] = trade_name
             self.trade_name = trade_name
         if responsible_name is not None:
+            old_data["responsible_name"] = self.responsible_name
+            new_data["responsible_name"] = responsible_name
             self.responsible_name = responsible_name
         if email is not None:
+            old_data["email"] = self.email
+            new_data["email"] = email
             self.email = email
         if active is not None:
+            old_data["active"] = self.active
+            new_data["active"] = active
             self.active = active
 
         self.add_event(
             CompanyUpdated(
                 id=self.id,
+                entity_type="Company",
+                old_data=old_data,
+                new_data=new_data,
             )
         )
 
@@ -168,10 +196,22 @@ class Company(Aggregate):
         """Marca o agregado como deletado (soft delete) e emite evento de exclusão."""
         self._operation_type = OperationType.DELETE
 
+        old_data = {
+            "legal_name": self.legal_name,
+            "trade_name": self.trade_name,
+            "responsible_name": self.responsible_name,
+            "email": self.email,
+            "cpf": self.cpf,
+            "cnpj": self.cnpj,
+            "active": self.active,
+        }
+
         self.deleted = True
 
         self.add_event(
             CompanyDeleted(
                 id=self.id,
+                entity_type="Company",
+                old_data=old_data,
             )
         )

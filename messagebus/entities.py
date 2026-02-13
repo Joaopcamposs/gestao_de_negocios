@@ -55,6 +55,20 @@ class OperationType(Enum):
 
 
 @dataclass(kw_only=True)
+class AuditableEvent:
+    """
+    Mixin para eventos que devem gerar registro de auditoria.
+
+    Carrega metadados de auditoria: tipo da entidade, dados anteriores
+    e dados novos. Deve ser utilizado junto com Event.
+    """
+
+    entity_type: str = ""
+    old_data: dict | None = None
+    new_data: dict | None = None
+
+
+@dataclass(kw_only=True)
 class Aggregate:
     """Classe base para agregados do domínio."""
 

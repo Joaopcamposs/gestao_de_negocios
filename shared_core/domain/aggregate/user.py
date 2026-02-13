@@ -67,10 +67,19 @@ class User(Aggregate, UserSecurity):
         """Marca o agregado para inserção e emite evento de criação."""
         self._operation_type = OperationType.INSERT
 
+        new_data = {
+            "email": self.email,
+            "cpf": self.cpf,
+            "active": self.active,
+            "admin": self.admin,
+        }
+
         self.add_event(
             UserCreated(
                 id=self.id,
                 company=self.company,
+                entity_type="User",
+                new_data=new_data,
             )
         )
 
@@ -92,19 +101,32 @@ class User(Aggregate, UserSecurity):
         """
         self._operation_type = OperationType.UPDATE
 
+        old_data: dict = {}
+        new_data: dict = {}
+
         if email is not None:
+            old_data["email"] = self.email
+            new_data["email"] = email
             self.email = email
         if password is not None:
+            new_data["password"] = "[REDACTED]"
             self._password_hash = self.encrypt_password(password)
         if active is not None:
+            old_data["active"] = self.active
+            new_data["active"] = active
             self.active = active
         if admin is not None:
+            old_data["admin"] = self.admin
+            new_data["admin"] = admin
             self.admin = admin
 
         self.add_event(
             UserUpdated(
                 id=self.id,
                 company=self.company,
+                entity_type="User",
+                old_data=old_data,
+                new_data=new_data,
             )
         )
 
@@ -112,12 +134,21 @@ class User(Aggregate, UserSecurity):
         """Marca o agregado como deletado (soft delete) e emite evento de exclusão."""
         self._operation_type = OperationType.DELETE
 
+        old_data = {
+            "email": self.email,
+            "cpf": self.cpf,
+            "active": self.active,
+            "admin": self.admin,
+        }
+
         self.deleted = True
 
         self.add_event(
             UserDeleted(
                 id=self.id,
                 company=self.company,
+                entity_type="User",
+                old_data=old_data,
             )
         )
 

@@ -27,6 +27,11 @@ from shared_core.handlers import (
     COMMAND_HANDLERS as CORE_COMMAND_HANDLERS,
     EVENT_HANDLERS as CORE_EVENT_HANDLERS,
 )
+from shared_core.services.handlers.audit_log import (
+    audit_entity_created,
+    audit_entity_deleted,
+    audit_entity_updated,
+)
 
 # Combina handlers do core com handlers específicos do dentista
 COMMAND_HANDLERS: CommandHandlers = CommandHandlers(
@@ -41,8 +46,8 @@ COMMAND_HANDLERS: CommandHandlers = CommandHandlers(
 EVENT_HANDLERS: EventHandlers = EventHandlers(
     {
         **CORE_EVENT_HANDLERS,
-        PatientCreated: [patient_created],
-        PatientUpdated: [patient_updated],
-        PatientDeleted: [patient_deleted],
+        PatientCreated: [patient_created, audit_entity_created],
+        PatientUpdated: [patient_updated, audit_entity_updated],
+        PatientDeleted: [patient_deleted, audit_entity_deleted],
     }
 )

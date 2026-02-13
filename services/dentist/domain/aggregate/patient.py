@@ -65,7 +65,23 @@ class Patient(Aggregate):
     def create(self) -> None:
         """Marca o agregado para inserção e emite evento de criação."""
         self._operation_type = OperationType.INSERT
-        self.add_event(PatientCreated(id=self.id, company=self.company))
+
+        new_data = {
+            "name": self.name,
+            "cpf": self.cpf,
+            "phone": self.phone,
+            "birth_date": str(self.birth_date) if self.birth_date else None,
+            "notes": self.notes,
+        }
+
+        self.add_event(
+            PatientCreated(
+                id=self.id,
+                company=self.company,
+                entity_type="Patient",
+                new_data=new_data,
+            )
+        )
 
     def update(
         self,
@@ -85,19 +101,55 @@ class Patient(Aggregate):
         """
         self._operation_type = OperationType.UPDATE
 
+        old_data: dict = {}
+        new_data: dict = {}
+
         if name is not None:
+            old_data["name"] = self.name
+            new_data["name"] = name
             self.name = name
         if phone is not None:
+            old_data["phone"] = self.phone
+            new_data["phone"] = phone
             self.phone = phone
         if birth_date is not None:
+            old_data["birth_date"] = str(self.birth_date) if self.birth_date else None
+            new_data["birth_date"] = str(birth_date)
             self.birth_date = birth_date
         if notes is not None:
+            old_data["notes"] = self.notes
+            new_data["notes"] = notes
             self.notes = notes
 
-        self.add_event(PatientUpdated(id=self.id, company=self.company))
+        self.add_event(
+            PatientUpdated(
+                id=self.id,
+                company=self.company,
+                entity_type="Patient",
+                old_data=old_data,
+                new_data=new_data,
+            )
+        )
 
     def delete(self) -> None:
         """Marca o agregado como deletado (soft delete) e emite evento de exclusão."""
         self._operation_type = OperationType.DELETE
+
+        old_data = {
+            "name": self.name,
+            "cpf": self.cpf,
+            "phone": self.phone,
+            "birth_date": str(self.birth_date) if self.birth_date else None,
+            "notes": self.notes,
+        }
+
         self.deleted = True
-        self.add_event(PatientDeleted(id=self.id, company=self.company))
+
+        self.add_event(
+            PatientDeleted(
+                id=self.id,
+                company=self.company,
+                entity_type="Patient",
+                old_data=old_data,
+            )
+        )
