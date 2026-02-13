@@ -32,7 +32,7 @@ class LegalCaseViewRepo(ViewRepository):
                 LegalCaseAggregate.company == company,
             )
             if not include_deleted:
-                query = query.where(LegalCaseAggregate.deleted == False)  # noqa: E712
+                query = query.where(LegalCaseAggregate.deleted_at.is_(None))
 
             result = (await session.execute(query)).scalar_one_or_none()
             if not result:
@@ -47,7 +47,7 @@ class LegalCaseViewRepo(ViewRepository):
                 status=result.status,
                 open_date=result.open_date,
                 notes=result.notes,
-                deleted=result.deleted,
+                deleted_at=result.deleted_at,
             )
 
     async def get_all(
@@ -68,7 +68,7 @@ class LegalCaseViewRepo(ViewRepository):
                 LegalCaseAggregate.company == company,
             )
             if not include_deleted:
-                query = query.where(LegalCaseAggregate.deleted == False)  # noqa: E712
+                query = query.where(LegalCaseAggregate.deleted_at.is_(None))
 
             results = (await session.execute(query)).scalars()
             if not results:
@@ -84,7 +84,7 @@ class LegalCaseViewRepo(ViewRepository):
                     status=r.status,
                     open_date=r.open_date,
                     notes=r.notes,
-                    deleted=r.deleted,
+                    deleted_at=r.deleted_at,
                 )
                 for r in results
             ]

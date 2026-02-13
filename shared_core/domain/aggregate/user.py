@@ -1,6 +1,7 @@
 """Módulo do agregado User."""
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from uuid import UUID
 
 import uuid7
@@ -22,7 +23,6 @@ class User(Aggregate, UserSecurity):
     company: UUID
     email: str
     cpf: str
-    active: bool
     admin: bool
 
     def __hash__(self) -> int:
@@ -141,7 +141,7 @@ class User(Aggregate, UserSecurity):
             "admin": self.admin,
         }
 
-        self.deleted = True
+        self.deleted_at = datetime.now(timezone.utc)
 
         self.add_event(
             UserDeleted(
@@ -161,7 +161,6 @@ class PublicUser(Aggregate, UserSecurity):
     company: UUID
     email_encrypted: bytes
     email_hash: str
-    active: bool
 
     def __hash__(self) -> int:
         return hash(self.id)
@@ -215,3 +214,4 @@ class PublicUser(Aggregate, UserSecurity):
     def remove(self) -> None:
         """Marca o agregado como deletado (soft delete)."""
         self._operation_type = OperationType.DELETE
+        self.deleted_at = datetime.now(timezone.utc)

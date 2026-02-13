@@ -1,7 +1,7 @@
 """Módulo da entidade de leitura Patient no contexto dentista."""
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 
 
@@ -13,7 +13,7 @@ class Patient:
     company: UUID
     name: str
     cpf: str
-    deleted: bool
+    deleted_at: datetime | None = None
     phone: str | None = None
     birth_date: date | None = None
     notes: str | None = None

@@ -1,6 +1,7 @@
 """Módulo da entidade de leitura Company."""
 
 from dataclasses import dataclass
+from datetime import datetime
 from uuid import UUID
 
 
@@ -14,6 +15,6 @@ class Company:
     email: str
     cpf: str
     active: bool
-    deleted: bool
+    deleted_at: datetime | None = None
     trade_name: str | None = None
     cnpj: str | None = None

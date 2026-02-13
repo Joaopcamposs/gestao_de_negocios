@@ -53,7 +53,7 @@ class TestCreateLegalCase:
         assert len(cases) == 1
         assert cases[0].client_name == "Maria Souza"
         assert cases[0].case_number == "002"
-        assert cases[0].deleted is False
+        assert cases[0].deleted_at is None
 
     async def test_create_with_all_fields(self, engine) -> None:
         bus = _bootstrap()
@@ -157,7 +157,7 @@ class TestDeleteLegalCase:
             uow, company=_TEST_COMPANY_ID, case_number="021", include_deleted=True
         )
         assert len(cases) == 1
-        assert cases[0].deleted is True
+        assert cases[0].deleted_at is not None
 
     async def test_delete_nonexistent_raises_error(self, engine) -> None:
         bus = _bootstrap()

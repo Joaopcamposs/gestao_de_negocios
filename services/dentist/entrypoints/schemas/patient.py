@@ -1,6 +1,6 @@
 """Módulo de schemas de entrada/saída para Patient no contexto dentista."""
 
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -33,7 +33,7 @@ class ReadPatientSchema(BaseModel):
     company: UUID
     name: str
     cpf: str
-    deleted: bool
+    deleted_at: datetime | None = None
     phone: str | None = None
     birth_date: date | None = None
     notes: str | None = None

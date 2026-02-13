@@ -1,6 +1,6 @@
 """Módulo de schemas de entrada/saída para LegalCase no contexto advogado."""
 
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -34,7 +34,7 @@ class ReadLegalCaseSchema(BaseModel):
     company: UUID
     case_number: str
     client_name: str
-    deleted: bool
+    deleted_at: datetime | None = None
     description: str | None = None
     status: str = "open"
     open_date: date | None = None

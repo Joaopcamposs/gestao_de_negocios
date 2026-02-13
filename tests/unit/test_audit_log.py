@@ -187,7 +187,7 @@ class TestAuditLogEntity:
         )
 
         with pytest.raises(AttributeError):
-            audit.operation = "UPDATE"  # type: ignore[misc]
+            setattr(audit, "operation", "UPDATE")
 
 
 class TestCompanyAuditData:
@@ -931,6 +931,477 @@ class TestAuditHandlersRegistration:
         assert audit_entity_deleted in EVENT_HANDLERS[LegalCaseDeleted]
 
 
+class TestAuditBase:
+    """Testes para a classe base AuditBase com campos de auditoria."""
+
+    def test_audit_base_default_values(self) -> None:
+        """Verifica que os campos de auditoria possuem valores padrão corretos."""
+        from messagebus.entities import AuditBase
+
+        audit = AuditBase()
+
+        assert audit.active is True
+        assert audit.created_at is None
+        assert audit.created_by is None
+        assert audit.updated_at is None
+        assert audit.updated_by is None
+        assert audit.deleted_at is None
+        assert audit.deleted_by is None
+
+    def test_audit_base_is_deleted_false_when_no_deleted_at(self) -> None:
+        """Verifica que is_deleted retorna False quando deleted_at é None."""
+        from messagebus.entities import AuditBase
+
+        audit = AuditBase()
+
+        assert audit.is_deleted is False
+
+    def test_audit_base_is_deleted_true_when_deleted_at_set(self) -> None:
+        """Verifica que is_deleted retorna True quando deleted_at possui valor."""
+        from messagebus.entities import AuditBase
+
+        audit = AuditBase(deleted_at=datetime.now(timezone.utc))
+
+        assert audit.is_deleted is True
+
+    def test_audit_base_accepts_all_fields(self) -> None:
+        """Verifica que o AuditBase aceita todos os campos de auditoria."""
+        from messagebus.entities import AuditBase
+
+        now = datetime.now(timezone.utc)
+        user_id = uuid7.create()
+
+        audit = AuditBase(
+            active=False,
+            created_at=now,
+            created_by=user_id,
+            updated_at=now,
+            updated_by=user_id,
+            deleted_at=now,
+            deleted_by=user_id,
+        )
+
+        assert audit.active is False
+        assert audit.created_at == now
+        assert audit.created_by == user_id
+        assert audit.updated_at == now
+        assert audit.updated_by == user_id
+        assert audit.deleted_at == now
+        assert audit.deleted_by == user_id
+
+    def test_audit_base_can_be_used_standalone(self) -> None:
+        """Verifica que AuditBase pode ser usada de forma independente (sem Aggregate)."""
+        from dataclasses import dataclass
+
+        from messagebus.entities import AuditBase
+
+        @dataclass(kw_only=True)
+        class SimpleEntity(AuditBase):
+            """Entidade simples que herda campos de auditoria."""
+
+            name: str
+
+        entity = SimpleEntity(name="Test")
+
+        assert entity.name == "Test"
+        assert entity.active is True
+        assert entity.created_at is None
+        assert entity.is_deleted is False
+
+
+class TestAggregateInheritsAuditBase:
+    """Testes para garantir que Aggregate herda de AuditBase."""
+
+    def test_aggregate_is_subclass_of_audit_base(self) -> None:
+        """Verifica que Aggregate é subclasse de AuditBase."""
+        from messagebus.entities import Aggregate, AuditBase
+
+        assert issubclass(Aggregate, AuditBase)
+
+    def test_aggregate_instance_is_audit_base(self) -> None:
+        """Verifica que uma instância de Aggregate também é AuditBase."""
+        from messagebus.entities import Aggregate, AuditBase
+
+        agg = Aggregate()
+
+        assert isinstance(agg, AuditBase)
+
+    def test_aggregate_inherits_audit_fields(self) -> None:
+        """Verifica que Aggregate herda todos os campos de auditoria."""
+        from messagebus.entities import Aggregate
+
+        agg = Aggregate()
+
+        assert agg.active is True
+        assert agg.created_at is None
+        assert agg.created_by is None
+        assert agg.updated_at is None
+        assert agg.updated_by is None
+        assert agg.deleted_at is None
+        assert agg.deleted_by is None
+
+    def test_aggregate_inherits_is_deleted(self) -> None:
+        """Verifica que Aggregate herda a propriedade is_deleted."""
+        from messagebus.entities import Aggregate
+
+        agg = Aggregate()
+        assert agg.is_deleted is False
+
+        agg.deleted_at = datetime.now(timezone.utc)
+        assert agg.is_deleted is True
+
+    def test_aggregate_has_own_fields(self) -> None:
+        """Verifica que Aggregate mantém seus campos próprios (events, operation_type)."""
+        from messagebus.entities import Aggregate
+
+        agg = Aggregate()
+
+        assert agg.events == []
+        assert agg.operation_type is None
+
+    def test_company_is_subclass_of_audit_base(self) -> None:
+        """Verifica que Company herda AuditBase via Aggregate."""
+        from messagebus.entities import AuditBase
+        from shared_core.domain.aggregate.company import Company
+
+        assert issubclass(Company, AuditBase)
+
+        company = Company.create_aggregate(
+            legal_name="Test Corp",
+            trade_name=None,
+            responsible_name="John",
+            email="a@b.com",
+            cpf="12345678901",
+            cnpj=None,
+            active=True,
+        )
+
+        assert isinstance(company, AuditBase)
+        assert company.active is True
+        assert company.created_at is None
+        assert company.is_deleted is False
+
+    def test_company_delete_sets_deleted_at(self) -> None:
+        """Verifica que Company.delete() preenche deleted_at."""
+        from shared_core.domain.aggregate.company import Company
+
+        company = Company.create_aggregate(
+            legal_name="Del Corp",
+            trade_name=None,
+            responsible_name="John",
+            email="a@b.com",
+            cpf="12345678901",
+            cnpj=None,
+            active=True,
+        )
+        company.delete()
+
+        assert company.is_deleted is True
+        assert company.deleted_at is not None
+        assert isinstance(company.deleted_at, datetime)
+
+    def test_user_is_subclass_of_audit_base(self) -> None:
+        """Verifica que User herda AuditBase via Aggregate."""
+        from messagebus.entities import AuditBase
+        from shared_core.domain.aggregate.user import User
+
+        assert issubclass(User, AuditBase)
+
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="test@example.com",
+            cpf="12345678901",
+            password="secret",
+        )
+
+        assert isinstance(user, AuditBase)
+        assert user.active is True
+        assert user.is_deleted is False
+
+    def test_user_delete_sets_deleted_at(self) -> None:
+        """Verifica que User.delete() preenche deleted_at."""
+        from shared_core.domain.aggregate.user import User
+
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="test@example.com",
+            cpf="12345678901",
+            password="secret",
+        )
+        user.delete()
+
+        assert user.is_deleted is True
+        assert user.deleted_at is not None
+
+    def test_public_user_is_subclass_of_audit_base(self) -> None:
+        """Verifica que PublicUser herda AuditBase via Aggregate."""
+        from messagebus.entities import AuditBase
+        from shared_core.domain.aggregate.user import PublicUser, User
+
+        assert issubclass(PublicUser, AuditBase)
+
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="test@example.com",
+            cpf="12345678901",
+            password="secret",
+        )
+        public = PublicUser.create_registration_aggregate(user=user)
+
+        assert isinstance(public, AuditBase)
+        assert public.active is True
+        assert public.is_deleted is False
+
+    def test_public_user_remove_sets_deleted_at(self) -> None:
+        """Verifica que PublicUser.remove() preenche deleted_at."""
+        from shared_core.domain.aggregate.user import PublicUser, User
+
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="test@example.com",
+            cpf="12345678901",
+            password="secret",
+        )
+        public = PublicUser.create_registration_aggregate(user=user)
+        public.remove()
+
+        assert public.is_deleted is True
+        assert public.deleted_at is not None
+
+    def test_patient_is_subclass_of_audit_base(self) -> None:
+        """Verifica que Patient herda AuditBase via Aggregate."""
+        from messagebus.entities import AuditBase
+        from services.dentist.domain.aggregate.patient import Patient
+
+        assert issubclass(Patient, AuditBase)
+
+        patient = Patient.create_aggregate(
+            company=uuid7.create(),
+            name="Test",
+            cpf="12345678901",
+        )
+
+        assert isinstance(patient, AuditBase)
+        assert patient.active is True
+        assert patient.is_deleted is False
+
+    def test_patient_delete_sets_deleted_at(self) -> None:
+        """Verifica que Patient.delete() preenche deleted_at."""
+        from services.dentist.domain.aggregate.patient import Patient
+
+        patient = Patient.create_aggregate(
+            company=uuid7.create(),
+            name="Test",
+            cpf="12345678901",
+        )
+        patient.delete()
+
+        assert patient.is_deleted is True
+        assert patient.deleted_at is not None
+
+    def test_legal_case_is_subclass_of_audit_base(self) -> None:
+        """Verifica que LegalCase herda AuditBase via Aggregate."""
+        from messagebus.entities import AuditBase
+        from services.lawyer.domain.aggregate.legal_case import LegalCase
+
+        assert issubclass(LegalCase, AuditBase)
+
+        lc = LegalCase.create_aggregate(
+            company=uuid7.create(),
+            case_number="001",
+            client_name="Test",
+        )
+
+        assert isinstance(lc, AuditBase)
+        assert lc.active is True
+        assert lc.is_deleted is False
+
+    def test_legal_case_delete_sets_deleted_at(self) -> None:
+        """Verifica que LegalCase.delete() preenche deleted_at."""
+        from services.lawyer.domain.aggregate.legal_case import LegalCase
+
+        lc = LegalCase.create_aggregate(
+            company=uuid7.create(),
+            case_number="001",
+            client_name="Test",
+        )
+        lc.delete()
+
+        assert lc.is_deleted is True
+        assert lc.deleted_at is not None
+
+    def test_audit_fields_in_orm_company_table(self) -> None:
+        """Verifica que a tabela company possui colunas de auditoria no ORM."""
+        from shared_core.adapters.orm.company import company
+
+        column_names = [c.name for c in company.columns]
+        assert "created_at" in column_names
+        assert "created_by" in column_names
+        assert "updated_at" in column_names
+        assert "updated_by" in column_names
+        assert "deleted_at" in column_names
+        assert "deleted_by" in column_names
+        assert "active" in column_names
+        assert "deleted" not in column_names
+
+    def test_audit_fields_in_orm_user_table(self) -> None:
+        """Verifica que a tabela user possui colunas de auditoria no ORM."""
+        from shared_core.adapters.orm.user import user
+
+        column_names = [c.name for c in user.columns]
+        assert "created_at" in column_names
+        assert "created_by" in column_names
+        assert "updated_at" in column_names
+        assert "updated_by" in column_names
+        assert "deleted_at" in column_names
+        assert "deleted_by" in column_names
+        assert "active" in column_names
+        assert "deleted" not in column_names
+
+    def test_audit_fields_in_orm_public_user_table(self) -> None:
+        """Verifica que a tabela public_user possui colunas de auditoria no ORM."""
+        from shared_core.adapters.orm.user import public_user
+
+        column_names = [c.name for c in public_user.columns]
+        assert "created_at" in column_names
+        assert "created_by" in column_names
+        assert "deleted_at" in column_names
+        assert "deleted_by" in column_names
+        assert "deleted" not in column_names
+
+    def test_audit_fields_in_orm_patient_table(self) -> None:
+        """Verifica que a tabela patient possui colunas de auditoria no ORM."""
+        from services.dentist.adapters.orm.patient import patient
+
+        column_names = [c.name for c in patient.columns]
+        assert "created_at" in column_names
+        assert "created_by" in column_names
+        assert "updated_at" in column_names
+        assert "updated_by" in column_names
+        assert "deleted_at" in column_names
+        assert "deleted_by" in column_names
+        assert "active" in column_names
+        assert "deleted" not in column_names
+
+    def test_audit_fields_in_orm_legal_case_table(self) -> None:
+        """Verifica que a tabela legal_case possui colunas de auditoria no ORM."""
+        from services.lawyer.adapters.orm.legal_case import legal_case
+
+        column_names = [c.name for c in legal_case.columns]
+        assert "created_at" in column_names
+        assert "created_by" in column_names
+        assert "updated_at" in column_names
+        assert "updated_by" in column_names
+        assert "deleted_at" in column_names
+        assert "deleted_by" in column_names
+        assert "active" in column_names
+        assert "deleted" not in column_names
+
+    def test_read_entity_company_uses_deleted_at(self) -> None:
+        """Verifica que a entidade de leitura Company usa deleted_at."""
+        from shared_core.domain.entities.company import Company
+
+        entity = Company(
+            id=uuid7.create(),
+            legal_name="Test",
+            responsible_name="John",
+            email="a@b.com",
+            cpf="12345678901",
+            active=True,
+        )
+        assert entity.deleted_at is None
+
+        now = datetime.now(timezone.utc)
+        entity_deleted = Company(
+            id=uuid7.create(),
+            legal_name="Test",
+            responsible_name="John",
+            email="a@b.com",
+            cpf="12345678901",
+            active=True,
+            deleted_at=now,
+        )
+        assert entity_deleted.deleted_at == now
+
+    def test_read_entity_user_uses_deleted_at(self) -> None:
+        """Verifica que a entidade de leitura User usa deleted_at."""
+        from shared_core.domain.entities.user import User
+
+        entity = User(
+            id=uuid7.create(),
+            company=uuid7.create(),
+            email="a@b.com",
+            cpf="12345678901",
+            active=True,
+            admin=False,
+        )
+        assert entity.deleted_at is None
+
+    def test_read_schema_company_uses_deleted_at(self) -> None:
+        """Verifica que o schema ReadCompanySchema usa deleted_at."""
+        from shared_core.entrypoints.schemas.company import ReadCompanySchema
+
+        schema = ReadCompanySchema(
+            id=uuid7.create(),
+            legal_name="Test",
+            responsible_name="John",
+            email="a@b.com",
+            cpf="12345678901",
+            active=True,
+        )
+        assert schema.deleted_at is None
+
+        now = datetime.now(timezone.utc)
+        schema_deleted = ReadCompanySchema(
+            id=uuid7.create(),
+            legal_name="Test",
+            responsible_name="John",
+            email="a@b.com",
+            cpf="12345678901",
+            active=True,
+            deleted_at=now,
+        )
+        assert schema_deleted.deleted_at == now
+
+    def test_read_schema_user_uses_deleted_at(self) -> None:
+        """Verifica que o schema ReadUserSchema usa deleted_at."""
+        from shared_core.entrypoints.schemas.user import ReadUserSchema
+
+        schema = ReadUserSchema(
+            id=uuid7.create(),
+            company=uuid7.create(),
+            email="a@b.com",
+            cpf="12345678901",
+            active=True,
+            admin=False,
+        )
+        assert schema.deleted_at is None
+
+    def test_read_schema_patient_uses_deleted_at(self) -> None:
+        """Verifica que o schema ReadPatientSchema usa deleted_at."""
+        from services.dentist.entrypoints.schemas.patient import ReadPatientSchema
+
+        schema = ReadPatientSchema(
+            id=uuid7.create(),
+            company=uuid7.create(),
+            name="Test",
+            cpf="12345678901",
+        )
+        assert schema.deleted_at is None
+
+    def test_read_schema_legal_case_uses_deleted_at(self) -> None:
+        """Verifica que o schema ReadLegalCaseSchema usa deleted_at."""
+        from services.lawyer.entrypoints.schemas.legal_case import ReadLegalCaseSchema
+
+        schema = ReadLegalCaseSchema(
+            id=uuid7.create(),
+            company=uuid7.create(),
+            case_number="001",
+            client_name="Test",
+        )
+        assert schema.deleted_at is None
+
+
 class TestAuditLogApiRouterRegistration:
     """Testes para o registro do router de auditoria nas aplicações."""
 
@@ -939,7 +1410,9 @@ class TestAuditLogApiRouterRegistration:
         from services.dentist.main import app
 
         audit_routes = [
-            route.path for route in app.routes if hasattr(route, "path") and "audit" in route.path
+            route.path
+            for route in app.routes
+            if hasattr(route, "path") and "audit" in route.path
         ]
         assert any("/v1/audit-log" in route for route in audit_routes)
 
@@ -948,6 +1421,8 @@ class TestAuditLogApiRouterRegistration:
         from services.lawyer.main import app
 
         audit_routes = [
-            route.path for route in app.routes if hasattr(route, "path") and "audit" in route.path
+            route.path
+            for route in app.routes
+            if hasattr(route, "path") and "audit" in route.path
         ]
         assert any("/v1/audit-log" in route for route in audit_routes)

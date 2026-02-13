@@ -1,7 +1,7 @@
 """Módulo do agregado LegalCase do contexto advogado."""
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, timezone
 from uuid import UUID
 
 import uuid7
@@ -149,7 +149,7 @@ class LegalCase(Aggregate):
             "notes": self.notes,
         }
 
-        self.deleted = True
+        self.deleted_at = datetime.now(timezone.utc)
 
         self.add_event(
             LegalCaseDeleted(

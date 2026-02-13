@@ -1,7 +1,7 @@
 """Módulo da entidade de leitura LegalCase no contexto advogado."""
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 
 
@@ -13,7 +13,7 @@ class LegalCase:
     company: UUID
     case_number: str
     client_name: str
-    deleted: bool
+    deleted_at: datetime | None = None
     description: str | None = None
     status: str = "open"
     open_date: date | None = None

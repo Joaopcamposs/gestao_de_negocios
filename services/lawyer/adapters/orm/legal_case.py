@@ -1,6 +1,17 @@
 """Mapeamento ORM da tabela legal_case no contexto advogado."""
 
-from sqlalchemy import UUID, Boolean, Column, Date, Index, String, Table, Text, text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Index,
+    String,
+    Table,
+    Text,
+    text,
+    UUID,
+)
 
 from infra.database import mapper_registry
 from services.lawyer.domain.aggregate.legal_case import LegalCase
@@ -16,13 +27,19 @@ legal_case = Table(
     Column("status", String(50), nullable=False, default="open"),
     Column("open_date", Date, nullable=True),
     Column("notes", Text, nullable=True),
-    Column("deleted", Boolean, nullable=False, default=False),
+    Column("active", Boolean, nullable=False, default=True),
+    Column("created_at", DateTime(timezone=True), nullable=True),
+    Column("created_by", UUID, nullable=True),
+    Column("updated_at", DateTime(timezone=True), nullable=True),
+    Column("updated_by", UUID, nullable=True),
+    Column("deleted_at", DateTime(timezone=True), nullable=True),
+    Column("deleted_by", UUID, nullable=True),
     Index(
-        "ix_legal_case_number_company_deleted",
+        "ix_legal_case_number_company_not_deleted",
         "case_number",
         "company",
         unique=True,
-        postgresql_where=text("deleted = false"),
+        postgresql_where=text("deleted_at IS NULL"),
     ),
 )
 

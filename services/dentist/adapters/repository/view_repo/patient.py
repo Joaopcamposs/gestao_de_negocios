@@ -32,7 +32,7 @@ class PatientViewRepo(ViewRepository):
                 PatientAggregate.company == company,
             )
             if not include_deleted:
-                query = query.where(PatientAggregate.deleted == False)  # noqa: E712
+                query = query.where(PatientAggregate.deleted_at.is_(None))
 
             result = (await session.execute(query)).scalar_one_or_none()
             if not result:
@@ -46,7 +46,7 @@ class PatientViewRepo(ViewRepository):
                 phone=result.phone,
                 birth_date=result.birth_date,
                 notes=result.notes,
-                deleted=result.deleted,
+                deleted_at=result.deleted_at,
             )
 
     async def get_all(
@@ -67,7 +67,7 @@ class PatientViewRepo(ViewRepository):
                 PatientAggregate.company == company,
             )
             if not include_deleted:
-                query = query.where(PatientAggregate.deleted == False)  # noqa: E712
+                query = query.where(PatientAggregate.deleted_at.is_(None))
 
             results = (await session.execute(query)).scalars()
             if not results:
@@ -82,7 +82,7 @@ class PatientViewRepo(ViewRepository):
                     phone=r.phone,
                     birth_date=r.birth_date,
                     notes=r.notes,
-                    deleted=r.deleted,
+                    deleted_at=r.deleted_at,
                 )
                 for r in results
             ]

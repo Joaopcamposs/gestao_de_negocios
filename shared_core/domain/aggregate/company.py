@@ -1,6 +1,7 @@
 """Módulo do agregado Company."""
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from uuid import UUID
 
 import uuid7
@@ -28,7 +29,6 @@ class Company(Aggregate):
     responsible_name: str
     email: str
     cpf: str
-    active: bool
     trade_name: str | None = None
     cnpj: str | None = None
 
@@ -206,7 +206,7 @@ class Company(Aggregate):
             "active": self.active,
         }
 
-        self.deleted = True
+        self.deleted_at = datetime.now(timezone.utc)
 
         self.add_event(
             CompanyDeleted(

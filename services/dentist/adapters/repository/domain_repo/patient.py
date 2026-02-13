@@ -80,7 +80,7 @@ class PatientDomainRepo(AbstractPatientDomainRepo):
                     select(Patient).where(
                         Patient.cpf == cpf,
                         Patient.company == company,
-                        Patient.deleted == False,  # noqa: E712
+                        Patient.deleted_at.is_(None),
                     )
                 )
             ).scalar_one_or_none()
@@ -95,7 +95,13 @@ class PatientDomainRepo(AbstractPatientDomainRepo):
                 phone=result.phone,
                 birth_date=result.birth_date,
                 notes=result.notes,
-                deleted=result.deleted,
+                active=result.active,
+                created_at=result.created_at,
+                created_by=result.created_by,
+                updated_at=result.updated_at,
+                updated_by=result.updated_by,
+                deleted_at=result.deleted_at,
+                deleted_by=result.deleted_by,
             )
 
     async def create_aggregate(
@@ -119,7 +125,7 @@ class PatientDomainRepo(AbstractPatientDomainRepo):
                     select(Patient).where(
                         Patient.cpf == cpf,
                         Patient.company == company,
-                        Patient.deleted == False,  # noqa: E712
+                        Patient.deleted_at.is_(None),
                     )
                 )
             ).scalar_one_or_none()
@@ -145,7 +151,13 @@ class PatientDomainRepo(AbstractPatientDomainRepo):
             "phone": patient.phone,
             "birth_date": patient.birth_date,
             "notes": patient.notes,
-            "deleted": patient.deleted,
+            "active": patient.active,
+            "created_at": patient.created_at,
+            "created_by": patient.created_by,
+            "updated_at": patient.updated_at,
+            "updated_by": patient.updated_by,
+            "deleted_at": patient.deleted_at,
+            "deleted_by": patient.deleted_by,
         }
 
         operation: Executable
@@ -162,6 +174,13 @@ class PatientDomainRepo(AbstractPatientDomainRepo):
     async def _remove(self, patient: Patient) -> None:
         """Marca um paciente como deletado no banco de dados (soft delete)."""
         operation = (
-            update(Patient).where(Patient.id == patient.id).values({"deleted": True})
+            update(Patient)
+            .where(Patient.id == patient.id)
+            .values(
+                {
+                    "deleted_at": patient.deleted_at,
+                    "deleted_by": patient.deleted_by,
+                }
+            )
         )
         await self.session.execute(operation)

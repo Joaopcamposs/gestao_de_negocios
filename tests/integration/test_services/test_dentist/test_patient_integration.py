@@ -54,7 +54,7 @@ class TestCreatePatient:
         assert len(patients) == 1
         assert patients[0].name == "Maria Souza"
         assert patients[0].cpf == "98765432100"
-        assert patients[0].deleted is False
+        assert patients[0].deleted_at is None
 
     async def test_create_patient_with_all_fields(self, engine) -> None:
         """Verifica que todos os campos do paciente são persistidos."""
@@ -152,7 +152,7 @@ class TestDeletePatient:
         )
 
         assert len(patients) == 1
-        assert patients[0].deleted is True
+        assert patients[0].deleted_at is not None
 
     async def test_delete_nonexistent_patient_raises_error(self, engine) -> None:
         """Verifica que excluir paciente inexistente lança exceção."""

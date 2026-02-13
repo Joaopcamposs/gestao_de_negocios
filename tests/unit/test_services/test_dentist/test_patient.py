@@ -38,7 +38,7 @@ class TestPatientAggregate:
         assert patient.cpf == "12345678901"
         assert patient.company == _TEST_COMPANY_ID
         assert patient.id is not None
-        assert patient.deleted is False
+        assert patient.is_deleted is False
 
     def test_create_aggregate_with_all_fields(self) -> None:
         """Verifica que create_aggregate aceita todos os campos opcionais."""
@@ -112,14 +112,15 @@ class TestPatientAggregate:
         assert patient.name == "Changed"
         assert patient.phone == "11999999999"
 
-    def test_delete_sets_deleted_true(self) -> None:
-        """Verifica que delete() marca deleted como True."""
+    def test_delete_sets_deleted_at(self) -> None:
+        """Verifica que delete() preenche deleted_at com a data atual."""
         patient = Patient.create_aggregate(
             company=_TEST_COMPANY_ID, name="Test", cpf="11111111111"
         )
         patient.delete()
 
-        assert patient.deleted is True
+        assert patient.is_deleted is True
+        assert patient.deleted_at is not None
         assert patient.operation_type == OperationType.DELETE
 
     def test_delete_emits_patient_deleted_event(self) -> None:
@@ -207,7 +208,6 @@ class TestPatientEntity:
             company=_TEST_COMPANY_ID,
             name="Test",
             cpf="11111111111",
-            deleted=False,
         )
 
         with pytest.raises(AttributeError):
@@ -220,7 +220,6 @@ class TestPatientEntity:
             company=_TEST_COMPANY_ID,
             name="Test",
             cpf="11111111111",
-            deleted=False,
         )
 
         assert entity.phone is None

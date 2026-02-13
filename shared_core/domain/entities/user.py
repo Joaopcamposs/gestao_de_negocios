@@ -1,6 +1,7 @@
 """Módulo da entidade de leitura User."""
 
 from dataclasses import dataclass
+from datetime import datetime
 from uuid import UUID
 
 from messagebus.entities import UserBase
@@ -17,7 +18,7 @@ class User(UserBase, UserSecurity):
     cpf: str
     active: bool
     admin: bool
-    deleted: bool
+    deleted_at: datetime | None = None
 
 
 @dataclass(kw_only=True)

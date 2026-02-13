@@ -1,7 +1,7 @@
 """Módulo do agregado Patient do contexto dentista."""
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, timezone
 from uuid import UUID
 
 import uuid7
@@ -143,7 +143,7 @@ class Patient(Aggregate):
             "notes": self.notes,
         }
 
-        self.deleted = True
+        self.deleted_at = datetime.now(timezone.utc)
 
         self.add_event(
             PatientDeleted(

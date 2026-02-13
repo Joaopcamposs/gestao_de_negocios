@@ -71,7 +71,7 @@ class LegalCaseDomainRepo(AbstractLegalCaseDomainRepo):
                     select(LegalCase).where(
                         LegalCase.case_number == case_number,
                         LegalCase.company == company,
-                        LegalCase.deleted == False,  # noqa: E712
+                        LegalCase.deleted_at.is_(None),
                     )
                 )
             ).scalar_one_or_none()
@@ -87,7 +87,13 @@ class LegalCaseDomainRepo(AbstractLegalCaseDomainRepo):
                 status=result.status,
                 open_date=result.open_date,
                 notes=result.notes,
-                deleted=result.deleted,
+                active=result.active,
+                created_at=result.created_at,
+                created_by=result.created_by,
+                updated_at=result.updated_at,
+                updated_by=result.updated_by,
+                deleted_at=result.deleted_at,
+                deleted_by=result.deleted_by,
             )
 
     async def create_aggregate(
@@ -112,7 +118,7 @@ class LegalCaseDomainRepo(AbstractLegalCaseDomainRepo):
                     select(LegalCase).where(
                         LegalCase.case_number == case_number,
                         LegalCase.company == company,
-                        LegalCase.deleted == False,  # noqa: E712
+                        LegalCase.deleted_at.is_(None),
                     )
                 )
             ).scalar_one_or_none()
@@ -140,7 +146,13 @@ class LegalCaseDomainRepo(AbstractLegalCaseDomainRepo):
             "status": legal_case.status,
             "open_date": legal_case.open_date,
             "notes": legal_case.notes,
-            "deleted": legal_case.deleted,
+            "active": legal_case.active,
+            "created_at": legal_case.created_at,
+            "created_by": legal_case.created_by,
+            "updated_at": legal_case.updated_at,
+            "updated_by": legal_case.updated_by,
+            "deleted_at": legal_case.deleted_at,
+            "deleted_by": legal_case.deleted_by,
         }
 
         operation: Executable
@@ -161,6 +173,11 @@ class LegalCaseDomainRepo(AbstractLegalCaseDomainRepo):
         operation = (
             update(LegalCase)
             .where(LegalCase.id == legal_case.id)
-            .values({"deleted": True})
+            .values(
+                {
+                    "deleted_at": legal_case.deleted_at,
+                    "deleted_by": legal_case.deleted_by,
+                }
+            )
         )
         await self.session.execute(operation)

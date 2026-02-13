@@ -16,7 +16,9 @@ audit_log = Table(
     Column("old_data", JSONB, nullable=True),
     Column("new_data", JSONB, nullable=True),
     Column("user_id", UUID, nullable=True),
-    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Column(
+        "created_at", DateTime(timezone=True), nullable=False, server_default=func.now()
+    ),
     Index("ix_audit_log_entity", "entity_type", "entity_id"),
     Index("ix_audit_log_created_at", "created_at"),
     Index("ix_audit_log_user_id", "user_id"),

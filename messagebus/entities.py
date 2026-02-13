@@ -6,6 +6,7 @@ de infraestrutura (banco de dados, ORM, etc.).
 
 from abc import ABC
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
@@ -69,10 +70,38 @@ class AuditableEvent:
 
 
 @dataclass(kw_only=True)
-class Aggregate:
-    """Classe base para agregados do domínio."""
+class AuditBase:
+    """
+    Classe base com campos de auditoria.
 
-    deleted: bool = False
+    Pode ser herdada por agregados e entidades comuns. Contém campos de
+    criação (criado em/por), edição (editado em/por), exclusão lógica
+    (deletado em/por) e o campo ativo. O soft delete é controlado pelo
+    campo deleted_at (não nulo = deletado).
+    """
+
+    active: bool = True
+    created_at: datetime | None = None
+    created_by: UUID | None = None
+    updated_at: datetime | None = None
+    updated_by: UUID | None = None
+    deleted_at: datetime | None = None
+    deleted_by: UUID | None = None
+
+    @property
+    def is_deleted(self) -> bool:
+        """Retorna True se a entidade foi marcada como deletada (soft delete)."""
+        return self.deleted_at is not None
+
+
+@dataclass(kw_only=True)
+class Aggregate(AuditBase):
+    """
+    Classe base para agregados do domínio.
+
+    Herda os campos de auditoria de AuditBase e adiciona suporte a
+    eventos de domínio e controle de tipo de operação.
+    """
 
     events: list["Event"] = field(default_factory=list)
     _operation_type: OperationType | None = None

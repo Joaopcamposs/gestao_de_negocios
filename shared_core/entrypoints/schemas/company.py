@@ -1,5 +1,6 @@
 """Módulo de schemas de entrada/saída para Company."""
 
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -40,4 +41,4 @@ class ReadCompanySchema(BaseModel):
     cpf: str
     cnpj: str | None = None
     active: bool
-    deleted: bool
+    deleted_at: datetime | None = None

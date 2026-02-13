@@ -1,5 +1,6 @@
 """Módulo de schemas de entrada/saída para User."""
 
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -35,4 +36,4 @@ class ReadUserSchema(BaseModel):
     cpf: str
     active: bool
     admin: bool
-    deleted: bool
+    deleted_at: datetime | None = None

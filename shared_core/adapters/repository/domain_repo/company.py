@@ -120,7 +120,7 @@ class CompanyDomainRepo(AbstractCompanyDomainRepo):
                 await session.execute(
                     select(Company).where(
                         Company.legal_name == legal_name,
-                        Company.deleted == False,  # noqa: E712
+                        Company.deleted_at.is_(None),
                     )
                 )
             ).scalar_one_or_none()
@@ -156,7 +156,7 @@ class CompanyDomainRepo(AbstractCompanyDomainRepo):
                 await session.execute(
                     select(Company).where(
                         Company.legal_name == legal_name,
-                        Company.deleted == False,  # noqa: E712
+                        Company.deleted_at.is_(None),
                     )
                 )
             ).scalar_one_or_none()
@@ -172,7 +172,12 @@ class CompanyDomainRepo(AbstractCompanyDomainRepo):
                 cpf=company.cpf,
                 cnpj=company.cnpj,
                 active=company.active,
-                deleted=company.deleted,
+                created_at=company.created_at,
+                created_by=company.created_by,
+                updated_at=company.updated_at,
+                updated_by=company.updated_by,
+                deleted_at=company.deleted_at,
+                deleted_by=company.deleted_by,
             )
 
         return aggregate
@@ -191,7 +196,12 @@ class CompanyDomainRepo(AbstractCompanyDomainRepo):
             "cpf": company.cpf,
             "cnpj": company.cnpj,
             "active": company.active,
-            "deleted": company.deleted,
+            "created_at": company.created_at,
+            "created_by": company.created_by,
+            "updated_at": company.updated_at,
+            "updated_by": company.updated_by,
+            "deleted_at": company.deleted_at,
+            "deleted_by": company.deleted_by,
         }
 
         operation: Executable
@@ -208,7 +218,14 @@ class CompanyDomainRepo(AbstractCompanyDomainRepo):
     async def _remove(self, company: Company) -> None:
         """Marca uma empresa como deletada no banco de dados (soft delete)."""
         operation = (
-            update(Company).where(Company.id == company.id).values({"deleted": True})
+            update(Company)
+            .where(Company.id == company.id)
+            .values(
+                {
+                    "deleted_at": company.deleted_at,
+                    "deleted_by": company.deleted_by,
+                }
+            )
         )
 
         await self.session.execute(operation)

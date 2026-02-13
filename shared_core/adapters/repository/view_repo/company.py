@@ -28,9 +28,7 @@ class CompanyViewRepo(ViewRepository):
                 CompanyAggregate.legal_name == legal_name
             )
             if not include_deleted:
-                query = query.where(
-                    CompanyAggregate.deleted == False  # noqa: E712
-                )
+                query = query.where(CompanyAggregate.deleted_at.is_(None))
 
             company = (await session.execute(query)).scalar_one_or_none()
             if not company:
@@ -45,7 +43,7 @@ class CompanyViewRepo(ViewRepository):
                 cpf=company.cpf,
                 cnpj=company.cnpj,
                 active=company.active,
-                deleted=company.deleted,
+                deleted_at=company.deleted_at,
             )
 
         return entity
@@ -63,9 +61,7 @@ class CompanyViewRepo(ViewRepository):
         async with self.session as session:
             query = select(CompanyAggregate)
             if not include_deleted:
-                query = query.where(
-                    CompanyAggregate.deleted == False  # noqa: E712
-                )
+                query = query.where(CompanyAggregate.deleted_at.is_(None))
 
             companies = (await session.execute(query)).scalars()
             if not companies:
@@ -81,7 +77,7 @@ class CompanyViewRepo(ViewRepository):
                     cpf=company.cpf,
                     cnpj=company.cnpj,
                     active=company.active,
-                    deleted=company.deleted,
+                    deleted_at=company.deleted_at,
                 )
                 for company in companies
             ]

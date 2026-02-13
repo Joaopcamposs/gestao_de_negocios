@@ -39,7 +39,7 @@ class TestLegalCaseAggregate:
         assert lc.client_name == "João Silva"
         assert lc.company == _TEST_COMPANY_ID
         assert lc.id is not None
-        assert lc.deleted is False
+        assert lc.is_deleted is False
         assert lc.status == "open"
 
     def test_create_aggregate_with_all_fields(self) -> None:
@@ -102,12 +102,13 @@ class TestLegalCaseAggregate:
         assert lc.client_name == "Changed"
         assert lc.status == "open"
 
-    def test_delete_sets_deleted_true(self) -> None:
+    def test_delete_sets_deleted_at(self) -> None:
         lc = LegalCase.create_aggregate(
             company=_TEST_COMPANY_ID, case_number="001", client_name="Test"
         )
         lc.delete()
-        assert lc.deleted is True
+        assert lc.is_deleted is True
+        assert lc.deleted_at is not None
         assert lc.operation_type == OperationType.DELETE
 
     def test_delete_emits_event(self) -> None:
@@ -178,7 +179,6 @@ class TestLegalCaseEntity:
             company=_TEST_COMPANY_ID,
             case_number="001",
             client_name="Test",
-            deleted=False,
         )
         with pytest.raises(AttributeError):
             entity.client_name = "Changed"  # type: ignore[misc]
@@ -189,7 +189,6 @@ class TestLegalCaseEntity:
             company=_TEST_COMPANY_ID,
             case_number="001",
             client_name="Test",
-            deleted=False,
         )
         assert entity.description is None
         assert entity.open_date is None

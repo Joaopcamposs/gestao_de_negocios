@@ -31,9 +31,7 @@ class UserViewRepo(ViewRepository):
                 UserAggregate.email == email,
             )
             if not include_deleted:
-                query = query.where(
-                    UserAggregate.deleted == False  # noqa: E712
-                )
+                query = query.where(UserAggregate.deleted_at.is_(None))
 
             user = (await session.execute(query)).scalar_one_or_none()
             if not user:
@@ -46,7 +44,7 @@ class UserViewRepo(ViewRepository):
                 cpf=user.cpf,
                 active=user.active,
                 admin=user.admin,
-                deleted=user.deleted,
+                deleted_at=user.deleted_at,
             )
 
         return entity
@@ -64,7 +62,7 @@ class UserViewRepo(ViewRepository):
         async with self.session as session:
             query = select(UserAggregate).where(
                 UserAggregate.id == id,
-                UserAggregate.deleted == False,  # noqa: E712
+                UserAggregate.deleted_at.is_(None),
             )
 
             user = (await session.execute(query)).scalar_one_or_none()
@@ -78,7 +76,7 @@ class UserViewRepo(ViewRepository):
                 cpf=user.cpf,
                 active=user.active,
                 admin=user.admin,
-                deleted=user.deleted,
+                deleted_at=user.deleted_at,
                 _password_hash=user.password_hash,
             )
 
@@ -97,9 +95,7 @@ class UserViewRepo(ViewRepository):
         async with self.session as session:
             query = select(UserAggregate).where()
             if not include_deleted:
-                query = query.where(
-                    UserAggregate.deleted == False  # noqa: E712
-                )
+                query = query.where(UserAggregate.deleted_at.is_(None))
 
             users = (await session.execute(query)).scalars()
             if not users:
@@ -113,7 +109,7 @@ class UserViewRepo(ViewRepository):
                     cpf=user.cpf,
                     active=user.active,
                     admin=user.admin,
-                    deleted=user.deleted,
+                    deleted_at=user.deleted_at,
                 )
                 for user in users
             ]
@@ -134,7 +130,7 @@ class UserViewRepo(ViewRepository):
                 await session.execute(
                     select(PublicUserAggregate).where(
                         PublicUserAggregate.email_hash == email_hash,
-                        PublicUserAggregate.deleted.is_(False),
+                        PublicUserAggregate.deleted_at.is_(None),
                     )
                 )
             ).scalar_one_or_none()

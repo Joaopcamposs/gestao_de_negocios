@@ -101,7 +101,7 @@ class UserDomainRepo(AbstractUserDomainRepo, PublicUserMixin):
                 await session.execute(
                     select(User).where(
                         User.email == email,
-                        User.deleted == False,  # noqa: E712
+                        User.deleted_at.is_(None),
                     )
                 )
             ).scalar_one_or_none()
@@ -135,7 +135,7 @@ class UserDomainRepo(AbstractUserDomainRepo, PublicUserMixin):
                 await session.execute(
                     select(User).where(
                         User.email == email,
-                        User.deleted == False,  # noqa: E712
+                        User.deleted_at.is_(None),
                     )
                 )
             ).scalar_one_or_none()
@@ -150,7 +150,12 @@ class UserDomainRepo(AbstractUserDomainRepo, PublicUserMixin):
                 _password_hash=user.password_hash,
                 active=user.active,
                 admin=user.admin,
-                deleted=user.deleted,
+                created_at=user.created_at,
+                created_by=user.created_by,
+                updated_at=user.updated_at,
+                updated_by=user.updated_by,
+                deleted_at=user.deleted_at,
+                deleted_by=user.deleted_by,
             )
 
         return aggregate
@@ -173,7 +178,7 @@ class UserDomainRepo(AbstractUserDomainRepo, PublicUserMixin):
                 await session.execute(
                     select(User).where(
                         User.id == id,
-                        User.deleted == False,  # noqa: E712
+                        User.deleted_at.is_(None),
                     )
                 )
             ).scalar_one_or_none()
@@ -188,7 +193,12 @@ class UserDomainRepo(AbstractUserDomainRepo, PublicUserMixin):
                 _password_hash=user.password_hash,
                 active=user.active,
                 admin=user.admin,
-                deleted=user.deleted,
+                created_at=user.created_at,
+                created_by=user.created_by,
+                updated_at=user.updated_at,
+                updated_by=user.updated_by,
+                deleted_at=user.deleted_at,
+                deleted_by=user.deleted_by,
             )
 
         return aggregate
@@ -206,7 +216,12 @@ class UserDomainRepo(AbstractUserDomainRepo, PublicUserMixin):
             "_password_hash": user.password_hash,
             "active": user.active,
             "admin": user.admin,
-            "deleted": user.deleted,
+            "created_at": user.created_at,
+            "created_by": user.created_by,
+            "updated_at": user.updated_at,
+            "updated_by": user.updated_by,
+            "deleted_at": user.deleted_at,
+            "deleted_by": user.deleted_by,
         }
 
         operation: Executable
@@ -222,6 +237,15 @@ class UserDomainRepo(AbstractUserDomainRepo, PublicUserMixin):
 
     async def _remove(self, user: User) -> None:
         """Marca um usuário como deletado no banco de dados (soft delete)."""
-        operation = update(User).where(User.id == user.id).values({"deleted": True})
+        operation = (
+            update(User)
+            .where(User.id == user.id)
+            .values(
+                {
+                    "deleted_at": user.deleted_at,
+                    "deleted_by": user.deleted_by,
+                }
+            )
+        )
 
         await self.session.execute(operation)
