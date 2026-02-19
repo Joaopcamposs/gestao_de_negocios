@@ -105,22 +105,10 @@ class Patient(Aggregate):
         old_data: dict = {}
         new_data: dict = {}
 
-        if name is not None:
-            old_data["name"] = self.name
-            new_data["name"] = name
-            self.name = name
-        if phone is not None:
-            old_data["phone"] = self.phone
-            new_data["phone"] = phone
-            self.phone = phone
-        if birth_date is not None:
-            old_data["birth_date"] = str(self.birth_date) if self.birth_date else None
-            new_data["birth_date"] = str(birth_date)
-            self.birth_date = birth_date
-        if notes is not None:
-            old_data["notes"] = self.notes
-            new_data["notes"] = notes
-            self.notes = notes
+        self._track_change(old_data, new_data, "name", name)
+        self._track_change(old_data, new_data, "phone", phone)
+        self._track_change(old_data, new_data, "birth_date", birth_date, serializer=str)
+        self._track_change(old_data, new_data, "notes", notes)
 
         self.add_event(
             PatientUpdated(

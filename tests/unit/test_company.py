@@ -375,8 +375,10 @@ class TestCompanyEntity:
         assert entity.trade_name is None
         assert entity.cnpj is None
 
-    def test_company_entity_is_frozen(self) -> None:
-        """Verifica que a entidade Company é imutável (frozen dataclass)."""
+    def test_company_entity_inherits_audit_base(self) -> None:
+        """Verifica que a entidade Company herda os campos de auditoria de AuditBase."""
+        from messagebus.entities import AuditBase
+
         uid = uuid7.create()
         entity = CompanyEntity(
             id=uid,
@@ -387,10 +389,13 @@ class TestCompanyEntity:
             active=True,
         )
 
-        import pytest
-
-        with pytest.raises(AttributeError):
-            setattr(entity, "legal_name", "New Name")
+        assert isinstance(entity, AuditBase)
+        assert entity.created_at is None
+        assert entity.created_by is None
+        assert entity.updated_at is None
+        assert entity.updated_by is None
+        assert entity.deleted_at is None
+        assert entity.deleted_by is None
 
 
 class TestCompanySchemas:

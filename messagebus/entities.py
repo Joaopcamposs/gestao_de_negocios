@@ -116,3 +116,28 @@ class Aggregate(AuditBase):
 
         assert issubclass(type(event), Event)
         self.events.append(event)
+
+    def _track_change(
+        self,
+        old_data: dict,
+        new_data: dict,
+        field_name: str,
+        new_value: Any,
+        serializer: Any = None,
+    ) -> None:
+        """
+        Registra a mudança de um campo nos dicionários de auditoria e aplica o novo valor.
+
+        Args:
+            old_data: Dicionário de dados anteriores da auditoria.
+            new_data: Dicionário de dados novos da auditoria.
+            field_name: Nome do atributo no agregado.
+            new_value: Novo valor a ser aplicado (ignorado se None).
+            serializer: Função opcional para serializar o valor (ex: str para datas).
+        """
+        if new_value is None:
+            return
+        current = getattr(self, field_name)
+        old_data[field_name] = serializer(current) if serializer else current
+        new_data[field_name] = serializer(new_value) if serializer else new_value
+        setattr(self, field_name, new_value)

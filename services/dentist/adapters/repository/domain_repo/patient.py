@@ -4,12 +4,12 @@ from abc import abstractmethod
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import insert, select, update
-from sqlalchemy.sql import Executable
+from sqlalchemy import select
 
-from messagebus.entities import DomainRepository, OperationType
+from messagebus.entities import DomainRepository
 from services.dentist.domain.aggregate.patient import Patient
 from services.dentist.domain.exceptions import PatientAlreadyRegistered, PatientNotFound
+from shared_core.adapters.repository.mixins.upsert import UpsertMixin
 
 
 class AbstractPatientDomainRepo(DomainRepository):
@@ -64,7 +64,7 @@ class AbstractPatientDomainRepo(DomainRepository):
         raise NotImplementedError()
 
 
-class PatientDomainRepo(AbstractPatientDomainRepo):
+class PatientDomainRepo(AbstractPatientDomainRepo, UpsertMixin):
     """Implementação concreta do repositório de domínio de Patient."""
 
     async def get_by_cpf(self, cpf: str, company: UUID) -> Patient:
@@ -159,28 +159,8 @@ class PatientDomainRepo(AbstractPatientDomainRepo):
             "deleted_at": patient.deleted_at,
             "deleted_by": patient.deleted_by,
         }
-
-        operation: Executable
-        match patient.operation_type:
-            case OperationType.INSERT:
-                operation = insert(Patient).values(data)
-            case OperationType.UPDATE:
-                operation = update(Patient).where(Patient.id == patient.id).values(data)
-            case _:
-                raise ValueError("Unsupported operation type for domain repository.")
-
-        await self.session.execute(operation)
+        await self._execute_upsert(Patient, patient, data)
 
     async def _remove(self, patient: Patient) -> None:
         """Marca um paciente como deletado no banco de dados (soft delete)."""
-        operation = (
-            update(Patient)
-            .where(Patient.id == patient.id)
-            .values(
-                {
-                    "deleted_at": patient.deleted_at,
-                    "deleted_by": patient.deleted_by,
-                }
-            )
-        )
-        await self.session.execute(operation)
+        await self._execute_soft_delete(Patient, patient)

@@ -4,15 +4,15 @@ from abc import abstractmethod
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import insert, select, text, update
-from sqlalchemy.sql import Executable
+from sqlalchemy import select, text
 
+from shared_core.adapters.repository.mixins.upsert import UpsertMixin
 from shared_core.domain.aggregate.company import Company
 from shared_core.domain.excecoes import (
     CompanyAlreadyRegistered,
     CompanyNotFound,
 )
-from messagebus.entities import DomainRepository, OperationType
+from messagebus.entities import DomainRepository
 
 
 class AbstractCompanyDomainRepo(DomainRepository):
@@ -66,7 +66,7 @@ class AbstractCompanyDomainRepo(DomainRepository):
         raise NotImplementedError()
 
 
-class CompanyDomainRepo(AbstractCompanyDomainRepo):
+class CompanyDomainRepo(AbstractCompanyDomainRepo, UpsertMixin):
     """Implementação concreta do repositório de domínio de Company."""
 
     async def validate_company_email(self, email: str) -> None:
@@ -182,10 +182,7 @@ class CompanyDomainRepo(AbstractCompanyDomainRepo):
 
         return aggregate
 
-    async def _add(
-        self,
-        company: Company,
-    ) -> None:
+    async def _add(self, company: Company) -> None:
         """Persiste uma empresa no banco de dados (inserção ou atualização)."""
         data = {
             "id": company.first_company_id or company.id,
@@ -203,29 +200,8 @@ class CompanyDomainRepo(AbstractCompanyDomainRepo):
             "deleted_at": company.deleted_at,
             "deleted_by": company.deleted_by,
         }
-
-        operation: Executable
-        match company.operation_type:
-            case OperationType.INSERT:
-                operation = insert(Company).values(data)
-            case OperationType.UPDATE:
-                operation = update(Company).where(Company.id == company.id).values(data)
-            case _:
-                raise ValueError("Unsupported operation type for domain repository.")
-
-        await self.session.execute(operation)
+        await self._execute_upsert(Company, company, data)
 
     async def _remove(self, company: Company) -> None:
         """Marca uma empresa como deletada no banco de dados (soft delete)."""
-        operation = (
-            update(Company)
-            .where(Company.id == company.id)
-            .values(
-                {
-                    "deleted_at": company.deleted_at,
-                    "deleted_by": company.deleted_by,
-                }
-            )
-        )
-
-        await self.session.execute(operation)
+        await self._execute_soft_delete(Company, company)

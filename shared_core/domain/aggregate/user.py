@@ -105,21 +105,13 @@ class User(Aggregate, UserSecurity):
         old_data: dict = {}
         new_data: dict = {}
 
-        if email is not None:
-            old_data["email"] = self.email
-            new_data["email"] = email
-            self.email = email
+        self._track_change(old_data, new_data, "email", email)
+        self._track_change(old_data, new_data, "active", active)
+        self._track_change(old_data, new_data, "admin", admin)
+
         if password is not None:
             new_data["password"] = AuditConstant.REDACTED_PASSWORD
             self._password_hash = self.encrypt_password(password)
-        if active is not None:
-            old_data["active"] = self.active
-            new_data["active"] = active
-            self.active = active
-        if admin is not None:
-            old_data["admin"] = self.admin
-            new_data["admin"] = admin
-            self.admin = admin
 
         self.add_event(
             UserUpdated(

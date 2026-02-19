@@ -4,15 +4,15 @@ from abc import abstractmethod
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import insert, select, update
-from sqlalchemy.sql import Executable
+from sqlalchemy import select
 
-from messagebus.entities import DomainRepository, OperationType
+from messagebus.entities import DomainRepository
 from services.lawyer.domain.aggregate.legal_case import LegalCase
 from services.lawyer.domain.exceptions import (
     LegalCaseAlreadyRegistered,
     LegalCaseNotFound,
 )
+from shared_core.adapters.repository.mixins.upsert import UpsertMixin
 
 
 class AbstractLegalCaseDomainRepo(DomainRepository):
@@ -55,7 +55,7 @@ class AbstractLegalCaseDomainRepo(DomainRepository):
         raise NotImplementedError()
 
 
-class LegalCaseDomainRepo(AbstractLegalCaseDomainRepo):
+class LegalCaseDomainRepo(AbstractLegalCaseDomainRepo, UpsertMixin):
     """Implementação concreta do repositório de domínio de LegalCase."""
 
     async def get_by_case_number(self, case_number: str, company: UUID) -> LegalCase:
@@ -154,30 +154,8 @@ class LegalCaseDomainRepo(AbstractLegalCaseDomainRepo):
             "deleted_at": legal_case.deleted_at,
             "deleted_by": legal_case.deleted_by,
         }
-
-        operation: Executable
-        match legal_case.operation_type:
-            case OperationType.INSERT:
-                operation = insert(LegalCase).values(data)
-            case OperationType.UPDATE:
-                operation = (
-                    update(LegalCase).where(LegalCase.id == legal_case.id).values(data)
-                )
-            case _:
-                raise ValueError("Unsupported operation type for domain repository.")
-
-        await self.session.execute(operation)
+        await self._execute_upsert(LegalCase, legal_case, data)
 
     async def _remove(self, legal_case: LegalCase) -> None:
         """Marca um processo como deletado no banco de dados (soft delete)."""
-        operation = (
-            update(LegalCase)
-            .where(LegalCase.id == legal_case.id)
-            .values(
-                {
-                    "deleted_at": legal_case.deleted_at,
-                    "deleted_by": legal_case.deleted_by,
-                }
-            )
-        )
-        await self.session.execute(operation)
+        await self._execute_soft_delete(LegalCase, legal_case)

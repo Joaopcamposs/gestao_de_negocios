@@ -1,9 +1,10 @@
 """Módulo de schemas de entrada/saída para Company."""
 
-from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel
+
+from shared_core.entrypoints.schemas.base import ReadAuditSchema
 
 
 class CreateCompanySchema(BaseModel):
@@ -30,7 +31,7 @@ class UpdateCompanySchema(BaseModel):
     new_active: bool | None = None
 
 
-class ReadCompanySchema(BaseModel):
+class ReadCompanySchema(ReadAuditSchema):
     """Schema de leitura de empresa."""
 
     id: UUID
@@ -41,9 +42,3 @@ class ReadCompanySchema(BaseModel):
     cpf: str
     cnpj: str | None = None
     active: bool
-    deleted_at: datetime | None = None
-    deleted_by: UUID | None = None
-    created_at: datetime | None = None
-    created_by: UUID | None = None
-    updated_at: datetime | None = None
-    updated_by: UUID | None = None

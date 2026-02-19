@@ -1,9 +1,10 @@
 """Módulo de schemas de entrada/saída para User."""
 
-from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel
+
+from shared_core.entrypoints.schemas.base import ReadAuditSchema
 
 
 class CreateUserSchema(BaseModel):
@@ -27,7 +28,7 @@ class UpdateUserSchema(BaseModel):
     new_admin: bool | None = None
 
 
-class ReadUserSchema(BaseModel):
+class ReadUserSchema(ReadAuditSchema):
     """Schema de leitura de usuário."""
 
     id: UUID
@@ -36,9 +37,3 @@ class ReadUserSchema(BaseModel):
     cpf: str
     active: bool
     admin: bool
-    deleted_at: datetime | None = None
-    deleted_by: UUID | None = None
-    created_at: datetime | None = None
-    created_by: UUID | None = None
-    updated_at: datetime | None = None
-    updated_by: UUID | None = None

@@ -1,12 +1,13 @@
 """Módulo da entidade de leitura Company."""
 
 from dataclasses import dataclass
-from datetime import datetime
 from uuid import UUID
 
+from messagebus.entities import AuditBase
 
-@dataclass(frozen=True)
-class Company:
+
+@dataclass(kw_only=True)
+class Company(AuditBase):
     """Entidade de leitura que representa uma empresa."""
 
     id: UUID
@@ -14,12 +15,5 @@ class Company:
     responsible_name: str
     email: str
     cpf: str
-    active: bool
-    deleted_at: datetime | None = None
-    deleted_by: UUID | None = None
-    created_at: datetime | None = None
-    created_by: UUID | None = None
-    updated_at: datetime | None = None
-    updated_by: UUID | None = None
     trade_name: str | None = None
     cnpj: str | None = None

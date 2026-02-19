@@ -1,9 +1,11 @@
 """Módulo de schemas de entrada/saída para Patient no contexto dentista."""
 
-from datetime import date, datetime
+from datetime import date
 from uuid import UUID
 
 from pydantic import BaseModel
+
+from shared_core.entrypoints.schemas.base import ReadAuditSchema
 
 
 class CreatePatientSchema(BaseModel):
@@ -26,20 +28,13 @@ class UpdatePatientSchema(BaseModel):
     new_notes: str | None = None
 
 
-class ReadPatientSchema(BaseModel):
+class ReadPatientSchema(ReadAuditSchema):
     """Schema de leitura de paciente."""
 
     id: UUID
     company: UUID
     name: str
     cpf: str
-    active: bool = True
-    deleted_at: datetime | None = None
-    deleted_by: UUID | None = None
-    created_at: datetime | None = None
-    created_by: UUID | None = None
-    updated_at: datetime | None = None
-    updated_by: UUID | None = None
     phone: str | None = None
     birth_date: date | None = None
     notes: str | None = None

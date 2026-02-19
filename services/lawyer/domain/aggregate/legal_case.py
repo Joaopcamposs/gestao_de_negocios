@@ -110,22 +110,10 @@ class LegalCase(Aggregate):
         old_data: dict = {}
         new_data: dict = {}
 
-        if client_name is not None:
-            old_data["client_name"] = self.client_name
-            new_data["client_name"] = client_name
-            self.client_name = client_name
-        if description is not None:
-            old_data["description"] = self.description
-            new_data["description"] = description
-            self.description = description
-        if status is not None:
-            old_data["status"] = self.status
-            new_data["status"] = status
-            self.status = status
-        if notes is not None:
-            old_data["notes"] = self.notes
-            new_data["notes"] = notes
-            self.notes = notes
+        self._track_change(old_data, new_data, "client_name", client_name)
+        self._track_change(old_data, new_data, "description", description)
+        self._track_change(old_data, new_data, "status", status)
+        self._track_change(old_data, new_data, "notes", notes)
 
         self.add_event(
             LegalCaseUpdated(

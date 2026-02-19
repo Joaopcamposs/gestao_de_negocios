@@ -1,9 +1,11 @@
 """Módulo de schemas de entrada/saída para LegalCase no contexto advogado."""
 
-from datetime import date, datetime
+from datetime import date
 from uuid import UUID
 
 from pydantic import BaseModel
+
+from shared_core.entrypoints.schemas.base import ReadAuditSchema
 
 
 class CreateLegalCaseSchema(BaseModel):
@@ -27,20 +29,13 @@ class UpdateLegalCaseSchema(BaseModel):
     new_notes: str | None = None
 
 
-class ReadLegalCaseSchema(BaseModel):
+class ReadLegalCaseSchema(ReadAuditSchema):
     """Schema de leitura de processo jurídico."""
 
     id: UUID
     company: UUID
     case_number: str
     client_name: str
-    active: bool = True
-    deleted_at: datetime | None = None
-    deleted_by: UUID | None = None
-    created_at: datetime | None = None
-    created_by: UUID | None = None
-    updated_at: datetime | None = None
-    updated_by: UUID | None = None
     description: str | None = None
     status: str = "open"
     open_date: date | None = None

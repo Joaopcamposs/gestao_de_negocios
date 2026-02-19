@@ -2,7 +2,6 @@
 
 from datetime import date
 
-import pytest
 import uuid7
 
 from messagebus.entities import OperationType
@@ -201,8 +200,10 @@ class TestPatientEvents:
 class TestPatientEntity:
     """Testes para a entidade de leitura Patient."""
 
-    def test_patient_entity_is_frozen(self) -> None:
-        """Verifica que a entidade Patient é imutável (frozen)."""
+    def test_patient_entity_inherits_audit_base(self) -> None:
+        """Verifica que a entidade Patient herda os campos de auditoria de AuditBase."""
+        from messagebus.entities import AuditBase
+
         entity = PatientEntity(
             id=uuid7.create(),
             company=_TEST_COMPANY_ID,
@@ -210,8 +211,11 @@ class TestPatientEntity:
             cpf="11111111111",
         )
 
-        with pytest.raises(AttributeError):
-            entity.name = "Changed"  # type: ignore[misc]
+        assert isinstance(entity, AuditBase)
+        assert entity.created_at is None
+        assert entity.updated_at is None
+        assert entity.deleted_at is None
+        assert entity.deleted_by is None
 
     def test_patient_entity_with_optional_fields(self) -> None:
         """Verifica que campos opcionais têm valor None por padrão."""
