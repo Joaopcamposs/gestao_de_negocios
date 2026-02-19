@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.sql import desc
 
 from messagebus.entities import ViewRepository
-from shared_core.domain.entities.audit_log import AuditLog
+from shared_core.domain.aggregate.audit_log import AuditLog
 
 
 class AuditLogViewRepo(ViewRepository):

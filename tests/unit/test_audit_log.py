@@ -8,7 +8,8 @@ import uuid7
 
 from messagebus.entities import AuditableEvent
 from messagebus.messagebus import Event
-from shared_core.domain.entities.audit_log import AuditLog
+from shared_core.domain.aggregate.audit_log import AuditLog
+from shared_core.domain.entities.audit_log import AuditLog as AuditLogRead
 
 
 _TEST_COMPANY_ID = uuid7.create()
@@ -89,7 +90,7 @@ class TestAuditLogEntity:
         old_data = {"name": "Old"}
         new_data = {"name": "New"}
 
-        audit = AuditLog(
+        audit = AuditLogRead(
             id=uid,
             entity_type="Company",
             entity_id=entity_id,
@@ -115,7 +116,7 @@ class TestAuditLogEntity:
         entity_id = uuid7.create()
         now = datetime.now(timezone.utc)
 
-        audit = AuditLog(
+        audit = AuditLogRead(
             id=uid,
             entity_type="User",
             entity_id=entity_id,
@@ -129,7 +130,7 @@ class TestAuditLogEntity:
 
     def test_audit_log_for_create_operation(self) -> None:
         """Verifica que CREATE tem new_data mas não old_data."""
-        audit = AuditLog(
+        audit = AuditLogRead(
             id=uuid7.create(),
             entity_type="Patient",
             entity_id=uuid7.create(),
@@ -146,7 +147,7 @@ class TestAuditLogEntity:
 
     def test_audit_log_for_update_operation(self) -> None:
         """Verifica que UPDATE tem old_data e new_data."""
-        audit = AuditLog(
+        audit = AuditLogRead(
             id=uuid7.create(),
             entity_type="Company",
             entity_id=uuid7.create(),
@@ -162,7 +163,7 @@ class TestAuditLogEntity:
 
     def test_audit_log_for_delete_operation(self) -> None:
         """Verifica que DELETE tem old_data mas não new_data."""
-        audit = AuditLog(
+        audit = AuditLogRead(
             id=uuid7.create(),
             entity_type="User",
             entity_id=uuid7.create(),
@@ -178,7 +179,7 @@ class TestAuditLogEntity:
 
     def test_audit_log_is_frozen(self) -> None:
         """Verifica que a entidade AuditLog é imutável (frozen)."""
-        audit = AuditLog(
+        audit = AuditLogRead(
             id=uuid7.create(),
             entity_type="Company",
             entity_id=uuid7.create(),
@@ -778,7 +779,7 @@ class TestReadAuditLogSchema:
         """Verifica que o schema pode ser criado a partir de uma entidade AuditLog."""
         from shared_core.entrypoints.schemas.audit_log import ReadAuditLogSchema
 
-        entity = AuditLog(
+        entity = AuditLogRead(
             id=uuid7.create(),
             entity_type="Patient",
             entity_id=uuid7.create(),

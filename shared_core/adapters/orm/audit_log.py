@@ -4,7 +4,7 @@ from sqlalchemy import Column, DateTime, Index, String, Table, func, UUID
 from sqlalchemy.dialects.postgresql import JSONB
 
 from infra.database import mapper_registry
-from shared_core.domain.entities.audit_log import AuditLog
+from shared_core.domain.aggregate.audit_log import AuditLog
 
 audit_log = Table(
     "audit_log",
