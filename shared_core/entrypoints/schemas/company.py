@@ -42,3 +42,8 @@ class ReadCompanySchema(BaseModel):
     cnpj: str | None = None
     active: bool
     deleted_at: datetime | None = None
+    deleted_by: UUID | None = None
+    created_at: datetime | None = None
+    created_by: UUID | None = None
+    updated_at: datetime | None = None
+    updated_by: UUID | None = None

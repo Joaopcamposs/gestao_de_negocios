@@ -7,6 +7,7 @@ from uuid import UUID
 import uuid7
 
 from shared_core.consts import ADMIN_USER_PREFIX
+from shared_core.domain.value_objects.enums import EntityType
 from shared_core.domain.events.company import (
     CompanyCreated,
     CompanyDeleted,
@@ -114,7 +115,7 @@ class Company(Aggregate):
         self.add_event(
             CompanyCreated(
                 id=self.id,
-                entity_type="Company",
+                entity_type=EntityType.COMPANY,
                 new_data=new_data,
             )
         )
@@ -186,7 +187,7 @@ class Company(Aggregate):
         self.add_event(
             CompanyUpdated(
                 id=self.id,
-                entity_type="Company",
+                entity_type=EntityType.COMPANY,
                 old_data=old_data,
                 new_data=new_data,
             )
@@ -211,7 +212,7 @@ class Company(Aggregate):
         self.add_event(
             CompanyDeleted(
                 id=self.id,
-                entity_type="Company",
+                entity_type=EntityType.COMPANY,
                 old_data=old_data,
             )
         )

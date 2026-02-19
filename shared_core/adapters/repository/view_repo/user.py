@@ -45,6 +45,11 @@ class UserViewRepo(ViewRepository):
                 active=user.active,
                 admin=user.admin,
                 deleted_at=user.deleted_at,
+                deleted_by=user.deleted_by,
+                created_at=user.created_at,
+                created_by=user.created_by,
+                updated_at=user.updated_at,
+                updated_by=user.updated_by,
             )
 
         return entity
@@ -77,6 +82,11 @@ class UserViewRepo(ViewRepository):
                 active=user.active,
                 admin=user.admin,
                 deleted_at=user.deleted_at,
+                deleted_by=user.deleted_by,
+                created_at=user.created_at,
+                created_by=user.created_by,
+                updated_at=user.updated_at,
+                updated_by=user.updated_by,
                 _password_hash=user.password_hash,
             )
 
@@ -110,6 +120,11 @@ class UserViewRepo(ViewRepository):
                     active=user.active,
                     admin=user.admin,
                     deleted_at=user.deleted_at,
+                    deleted_by=user.deleted_by,
+                    created_at=user.created_at,
+                    created_by=user.created_by,
+                    updated_at=user.updated_at,
+                    updated_by=user.updated_by,
                 )
                 for user in users
             ]

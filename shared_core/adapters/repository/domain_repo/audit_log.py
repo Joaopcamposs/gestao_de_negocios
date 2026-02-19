@@ -8,6 +8,7 @@ from sqlalchemy import insert
 
 from messagebus.entities import AuditableEvent, DomainRepository
 from shared_core.domain.aggregate.audit_log import AuditLog
+from shared_core.domain.value_objects.enums import AuditOperation
 
 
 class AbstractAuditLogDomainRepo(DomainRepository):
@@ -40,7 +41,7 @@ class AuditLogDomainRepo(AbstractAuditLogDomainRepo):
         self,
         event: AuditableEvent,
         entity_id: UUID,
-        operation: str,
+        operation: AuditOperation,
         user_id: UUID | None = None,
     ) -> AuditLog:
         """
@@ -58,7 +59,7 @@ class AuditLogDomainRepo(AbstractAuditLogDomainRepo):
         audit_log = AuditLog.create_aggregate(
             entity_type=event.entity_type,
             entity_id=entity_id,
-            operation=operation,
+            operation=operation.value,
             user_id=user_id,
             old_data=event.old_data,
             new_data=event.new_data,

@@ -44,6 +44,11 @@ class CompanyViewRepo(ViewRepository):
                 cnpj=company.cnpj,
                 active=company.active,
                 deleted_at=company.deleted_at,
+                deleted_by=company.deleted_by,
+                created_at=company.created_at,
+                created_by=company.created_by,
+                updated_at=company.updated_at,
+                updated_by=company.updated_by,
             )
 
         return entity
@@ -78,6 +83,11 @@ class CompanyViewRepo(ViewRepository):
                     cnpj=company.cnpj,
                     active=company.active,
                     deleted_at=company.deleted_at,
+                    deleted_by=company.deleted_by,
+                    created_at=company.created_at,
+                    created_by=company.created_by,
+                    updated_at=company.updated_at,
+                    updated_by=company.updated_by,
                 )
                 for company in companies
             ]

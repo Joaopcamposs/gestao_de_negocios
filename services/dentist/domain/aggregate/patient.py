@@ -7,6 +7,7 @@ from uuid import UUID
 import uuid7
 
 from messagebus.entities import Aggregate, OperationType
+from services.dentist.domain.value_objects.enums import EntityType
 from services.dentist.domain.events.patient import (
     PatientCreated,
     PatientDeleted,
@@ -78,7 +79,7 @@ class Patient(Aggregate):
             PatientCreated(
                 id=self.id,
                 company=self.company,
-                entity_type="Patient",
+                entity_type=EntityType.PATIENT,
                 new_data=new_data,
             )
         )
@@ -125,7 +126,7 @@ class Patient(Aggregate):
             PatientUpdated(
                 id=self.id,
                 company=self.company,
-                entity_type="Patient",
+                entity_type=EntityType.PATIENT,
                 old_data=old_data,
                 new_data=new_data,
             )
@@ -149,7 +150,7 @@ class Patient(Aggregate):
             PatientDeleted(
                 id=self.id,
                 company=self.company,
-                entity_type="Patient",
+                entity_type=EntityType.PATIENT,
                 old_data=old_data,
             )
         )

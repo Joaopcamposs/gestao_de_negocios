@@ -34,7 +34,13 @@ class ReadLegalCaseSchema(BaseModel):
     company: UUID
     case_number: str
     client_name: str
+    active: bool = True
     deleted_at: datetime | None = None
+    deleted_by: UUID | None = None
+    created_at: datetime | None = None
+    created_by: UUID | None = None
+    updated_at: datetime | None = None
+    updated_by: UUID | None = None
     description: str | None = None
     status: str = "open"
     open_date: date | None = None

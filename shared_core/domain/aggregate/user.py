@@ -6,6 +6,7 @@ from uuid import UUID
 
 import uuid7
 
+from shared_core.domain.value_objects.enums import AuditConstant, EntityType
 from shared_core.domain.events.user import (
     UserCreated,
     UserDeleted,
@@ -78,7 +79,7 @@ class User(Aggregate, UserSecurity):
             UserCreated(
                 id=self.id,
                 company=self.company,
-                entity_type="User",
+                entity_type=EntityType.USER,
                 new_data=new_data,
             )
         )
@@ -109,7 +110,7 @@ class User(Aggregate, UserSecurity):
             new_data["email"] = email
             self.email = email
         if password is not None:
-            new_data["password"] = "[REDACTED]"
+            new_data["password"] = AuditConstant.REDACTED_PASSWORD
             self._password_hash = self.encrypt_password(password)
         if active is not None:
             old_data["active"] = self.active
@@ -124,7 +125,7 @@ class User(Aggregate, UserSecurity):
             UserUpdated(
                 id=self.id,
                 company=self.company,
-                entity_type="User",
+                entity_type=EntityType.USER,
                 old_data=old_data,
                 new_data=new_data,
             )
@@ -147,7 +148,7 @@ class User(Aggregate, UserSecurity):
             UserDeleted(
                 id=self.id,
                 company=self.company,
-                entity_type="User",
+                entity_type=EntityType.USER,
                 old_data=old_data,
             )
         )

@@ -7,6 +7,7 @@ from uuid import UUID
 import uuid7
 
 from messagebus.entities import Aggregate, OperationType
+from services.lawyer.domain.value_objects.enums import EntityType, LegalCaseStatus
 from services.lawyer.domain.events.legal_case import (
     LegalCaseCreated,
     LegalCaseDeleted,
@@ -23,7 +24,7 @@ class LegalCase(Aggregate):
     case_number: str
     client_name: str
     description: str | None = None
-    status: str = "open"
+    status: LegalCaseStatus = LegalCaseStatus.OPEN
     open_date: date | None = None
     notes: str | None = None
 
@@ -36,7 +37,7 @@ class LegalCase(Aggregate):
         case_number: str,
         client_name: str,
         description: str | None = None,
-        status: str = "open",
+        status: LegalCaseStatus = LegalCaseStatus.OPEN,
         open_date: date | None = None,
         notes: str | None = None,
     ) -> "LegalCase":
@@ -48,7 +49,7 @@ class LegalCase(Aggregate):
             case_number: Número do processo.
             client_name: Nome do cliente.
             description: Descrição do processo (opcional).
-            status: Status do processo (padrão: 'open').
+            status: Status do processo (padrão: LegalCaseStatus.OPEN).
             open_date: Data de abertura (opcional).
             notes: Observações (opcional).
 
@@ -83,7 +84,7 @@ class LegalCase(Aggregate):
             LegalCaseCreated(
                 id=self.id,
                 company=self.company,
-                entity_type="LegalCase",
+                entity_type=EntityType.LEGAL_CASE,
                 new_data=new_data,
             )
         )
@@ -130,7 +131,7 @@ class LegalCase(Aggregate):
             LegalCaseUpdated(
                 id=self.id,
                 company=self.company,
-                entity_type="LegalCase",
+                entity_type=EntityType.LEGAL_CASE,
                 old_data=old_data,
                 new_data=new_data,
             )
@@ -155,7 +156,7 @@ class LegalCase(Aggregate):
             LegalCaseDeleted(
                 id=self.id,
                 company=self.company,
-                entity_type="LegalCase",
+                entity_type=EntityType.LEGAL_CASE,
                 old_data=old_data,
             )
         )

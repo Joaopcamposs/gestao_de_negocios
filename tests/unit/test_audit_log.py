@@ -10,7 +10,11 @@ from messagebus.entities import AuditableEvent
 from messagebus.messagebus import Event
 from shared_core.domain.aggregate.audit_log import AuditLog
 from shared_core.domain.entities.audit_log import AuditLog as AuditLogRead
-
+from shared_core.domain.value_objects.enums import (
+    AuditConstant,
+    AuditOperation,
+    EntityType,
+)
 
 _TEST_COMPANY_ID = uuid7.create()
 _TEST_USER_ID = uuid7.create()
@@ -92,9 +96,9 @@ class TestAuditLogEntity:
 
         audit = AuditLogRead(
             id=uid,
-            entity_type="Company",
+            entity_type=EntityType.COMPANY,
             entity_id=entity_id,
-            operation="UPDATE",
+            operation=AuditOperation.UPDATE,
             old_data=old_data,
             new_data=new_data,
             user_id=_TEST_USER_ID,
@@ -102,9 +106,9 @@ class TestAuditLogEntity:
         )
 
         assert audit.id == uid
-        assert audit.entity_type == "Company"
+        assert audit.entity_type == EntityType.COMPANY
         assert audit.entity_id == entity_id
-        assert audit.operation == "UPDATE"
+        assert audit.operation == AuditOperation.UPDATE
         assert audit.old_data == old_data
         assert audit.new_data == new_data
         assert audit.user_id == _TEST_USER_ID
@@ -118,9 +122,9 @@ class TestAuditLogEntity:
 
         audit = AuditLogRead(
             id=uid,
-            entity_type="User",
+            entity_type=EntityType.USER,
             entity_id=entity_id,
-            operation="CREATE",
+            operation=AuditOperation.CREATE,
             created_at=now,
         )
 
@@ -132,15 +136,15 @@ class TestAuditLogEntity:
         """Verifica que CREATE tem new_data mas não old_data."""
         audit = AuditLogRead(
             id=uuid7.create(),
-            entity_type="Patient",
+            entity_type=EntityType.PATIENT,
             entity_id=uuid7.create(),
-            operation="CREATE",
+            operation=AuditOperation.CREATE,
             old_data=None,
             new_data={"name": "João", "cpf": "12345678901"},
             created_at=datetime.now(timezone.utc),
         )
 
-        assert audit.operation == "CREATE"
+        assert audit.operation == AuditOperation.CREATE
         assert audit.old_data is None
         assert audit.new_data is not None
         assert audit.new_data["name"] == "João"
@@ -149,15 +153,15 @@ class TestAuditLogEntity:
         """Verifica que UPDATE tem old_data e new_data."""
         audit = AuditLogRead(
             id=uuid7.create(),
-            entity_type="Company",
+            entity_type=EntityType.COMPANY,
             entity_id=uuid7.create(),
-            operation="UPDATE",
+            operation=AuditOperation.UPDATE,
             old_data={"legal_name": "Old Corp"},
             new_data={"legal_name": "New Corp"},
             created_at=datetime.now(timezone.utc),
         )
 
-        assert audit.operation == "UPDATE"
+        assert audit.operation == AuditOperation.UPDATE
         assert audit.old_data == {"legal_name": "Old Corp"}
         assert audit.new_data == {"legal_name": "New Corp"}
 
@@ -165,15 +169,15 @@ class TestAuditLogEntity:
         """Verifica que DELETE tem old_data mas não new_data."""
         audit = AuditLogRead(
             id=uuid7.create(),
-            entity_type="User",
+            entity_type=EntityType.USER,
             entity_id=uuid7.create(),
-            operation="DELETE",
+            operation=AuditOperation.DELETE,
             old_data={"email": "test@test.com", "active": True},
             new_data=None,
             created_at=datetime.now(timezone.utc),
         )
 
-        assert audit.operation == "DELETE"
+        assert audit.operation == AuditOperation.DELETE
         assert audit.old_data is not None
         assert audit.new_data is None
 
@@ -181,9 +185,9 @@ class TestAuditLogEntity:
         """Verifica que a entidade AuditLog é imutável (frozen)."""
         audit = AuditLogRead(
             id=uuid7.create(),
-            entity_type="Company",
+            entity_type=EntityType.COMPANY,
             entity_id=uuid7.create(),
-            operation="CREATE",
+            operation=AuditOperation.CREATE,
             created_at=datetime.now(timezone.utc),
         )
 
@@ -214,7 +218,7 @@ class TestCompanyAuditData:
         assert len(created_events) == 1
 
         event = created_events[0]
-        assert event.entity_type == "Company"
+        assert event.entity_type == EntityType.COMPANY
         assert event.old_data is None
         assert event.new_data is not None
         assert event.new_data["legal_name"] == "Acme Corp"
@@ -245,7 +249,7 @@ class TestCompanyAuditData:
         assert len(updated_events) == 1
 
         event = updated_events[0]
-        assert event.entity_type == "Company"
+        assert event.entity_type == EntityType.COMPANY
         assert event.old_data == {"legal_name": "Acme Corp", "active": True}
         assert event.new_data == {"legal_name": "New Acme Corp", "active": False}
 
@@ -290,7 +294,7 @@ class TestCompanyAuditData:
         assert len(deleted_events) == 1
 
         event = deleted_events[0]
-        assert event.entity_type == "Company"
+        assert event.entity_type == EntityType.COMPANY
         assert event.new_data is None
         assert event.old_data is not None
         assert event.old_data["legal_name"] == "Acme Corp"
@@ -320,7 +324,7 @@ class TestUserAuditData:
         assert len(created_events) == 1
 
         event = created_events[0]
-        assert event.entity_type == "User"
+        assert event.entity_type == EntityType.USER
         assert event.old_data is None
         assert event.new_data is not None
         assert event.new_data["email"] == "test@example.com"
@@ -345,7 +349,7 @@ class TestUserAuditData:
         assert len(updated_events) == 1
 
         event = updated_events[0]
-        assert event.entity_type == "User"
+        assert event.entity_type == EntityType.USER
         assert event.old_data["email"] == "test@example.com"
         assert event.new_data["email"] == "new@example.com"
         assert event.old_data["active"] is True
@@ -366,7 +370,7 @@ class TestUserAuditData:
 
         event = user.events[0]
         assert isinstance(event, UserUpdated)
-        assert event.new_data["password"] == "[REDACTED]"
+        assert event.new_data["password"] == AuditConstant.REDACTED_PASSWORD
 
     def test_delete_emits_old_data_in_event(self) -> None:
         """Verifica que delete() popula old_data no evento."""
@@ -386,7 +390,7 @@ class TestUserAuditData:
         assert len(deleted_events) == 1
 
         event = deleted_events[0]
-        assert event.entity_type == "User"
+        assert event.entity_type == EntityType.USER
         assert event.new_data is None
         assert event.old_data is not None
         assert event.old_data["email"] == "test@example.com"
@@ -418,7 +422,7 @@ class TestPatientAuditData:
         assert len(created_events) == 1
 
         event = created_events[0]
-        assert event.entity_type == "Patient"
+        assert event.entity_type == EntityType.PATIENT
         assert event.old_data is None
         assert event.new_data is not None
         assert event.new_data["name"] == "João Silva"
@@ -444,7 +448,7 @@ class TestPatientAuditData:
         assert len(updated_events) == 1
 
         event = updated_events[0]
-        assert event.entity_type == "Patient"
+        assert event.entity_type == EntityType.PATIENT
         assert event.old_data["name"] == "João Silva"
         assert event.new_data["name"] == "Maria Silva"
         assert event.old_data["phone"] == "11999887766"
@@ -486,7 +490,7 @@ class TestPatientAuditData:
         assert len(deleted_events) == 1
 
         event = deleted_events[0]
-        assert event.entity_type == "Patient"
+        assert event.entity_type == EntityType.PATIENT
         assert event.new_data is None
         assert event.old_data is not None
         assert event.old_data["name"] == "João Silva"
@@ -518,7 +522,7 @@ class TestLegalCaseAuditData:
         assert len(created_events) == 1
 
         event = created_events[0]
-        assert event.entity_type == "LegalCase"
+        assert event.entity_type == EntityType.LEGAL_CASE
         assert event.old_data is None
         assert event.new_data is not None
         assert event.new_data["case_number"] == "0001234-56.2024.8.26.0100"
@@ -545,7 +549,7 @@ class TestLegalCaseAuditData:
         assert len(updated_events) == 1
 
         event = updated_events[0]
-        assert event.entity_type == "LegalCase"
+        assert event.entity_type == EntityType.LEGAL_CASE
         assert event.old_data == {"client_name": "Maria Souza", "status": "open"}
         assert event.new_data == {"client_name": "João Silva", "status": "closed"}
 
@@ -584,7 +588,7 @@ class TestLegalCaseAuditData:
         assert len(deleted_events) == 1
 
         event = deleted_events[0]
-        assert event.entity_type == "LegalCase"
+        assert event.entity_type == EntityType.LEGAL_CASE
         assert event.new_data is None
         assert event.old_data is not None
         assert event.old_data["case_number"] == "0001234-56.2024.8.26.0100"
@@ -615,7 +619,7 @@ class TestAuditLogDomainRepo:
             id=uuid7.create(),
             entity_type=event.entity_type,
             entity_id=entity_id,
-            operation="UPDATE",
+            operation=AuditOperation.UPDATE,
             old_data=event.old_data,
             new_data=event.new_data,
             user_id=_TEST_USER_ID,
@@ -624,7 +628,7 @@ class TestAuditLogDomainRepo:
 
         assert audit.entity_type == "TestEntity"
         assert audit.entity_id == entity_id
-        assert audit.operation == "UPDATE"
+        assert audit.operation == AuditOperation.UPDATE
         assert audit.old_data == {"field": "old"}
         assert audit.new_data == {"field": "new"}
         assert audit.user_id == _TEST_USER_ID
@@ -633,9 +637,9 @@ class TestAuditLogDomainRepo:
         """Verifica que AuditLog pode ser criado sem user_id (operação de sistema)."""
         audit = AuditLog(
             id=uuid7.create(),
-            entity_type="Company",
+            entity_type=EntityType.COMPANY,
             entity_id=uuid7.create(),
-            operation="CREATE",
+            operation=AuditOperation.CREATE,
             new_data={"legal_name": "Test Corp"},
             created_at=datetime.now(timezone.utc),
         )
@@ -743,17 +747,17 @@ class TestReadAuditLogSchema:
         now = datetime.now(timezone.utc)
         schema = ReadAuditLogSchema(
             id=uuid7.create(),
-            entity_type="Company",
+            entity_type=EntityType.COMPANY,
             entity_id=uuid7.create(),
-            operation="CREATE",
+            operation=AuditOperation.CREATE,
             old_data=None,
             new_data={"legal_name": "Acme"},
             user_id=_TEST_USER_ID,
             created_at=now,
         )
 
-        assert schema.entity_type == "Company"
-        assert schema.operation == "CREATE"
+        assert schema.entity_type == EntityType.COMPANY
+        assert schema.operation == AuditOperation.CREATE
         assert schema.old_data is None
         assert schema.new_data == {"legal_name": "Acme"}
         assert schema.user_id == _TEST_USER_ID
@@ -765,9 +769,9 @@ class TestReadAuditLogSchema:
 
         schema = ReadAuditLogSchema(
             id=uuid7.create(),
-            entity_type="User",
+            entity_type=EntityType.USER,
             entity_id=uuid7.create(),
-            operation="DELETE",
+            operation=AuditOperation.DELETE,
             created_at=datetime.now(timezone.utc),
         )
 
@@ -781,9 +785,9 @@ class TestReadAuditLogSchema:
 
         entity = AuditLogRead(
             id=uuid7.create(),
-            entity_type="Patient",
+            entity_type=EntityType.PATIENT,
             entity_id=uuid7.create(),
-            operation="UPDATE",
+            operation=AuditOperation.UPDATE,
             old_data={"name": "Old"},
             new_data={"name": "New"},
             user_id=_TEST_USER_ID,
@@ -814,9 +818,9 @@ class TestReadAuditLogSchema:
 
         schema = ReadAuditLogSchema(
             id=uuid7.create(),
-            entity_type="Company",
+            entity_type=EntityType.COMPANY,
             entity_id=uuid7.create(),
-            operation="UPDATE",
+            operation=AuditOperation.UPDATE,
             old_data={"legal_name": "Old Corp"},
             new_data={"legal_name": "New Corp"},
             created_at=datetime.now(timezone.utc),

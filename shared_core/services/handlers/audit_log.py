@@ -8,12 +8,13 @@ from messagebus.messagebus import Event, logger
 from infra.database.unit_of_work import UnitOfWork
 from shared_core.adapters.repository.domain_repo.audit_log import AuditLogDomainRepo
 from shared_core.domain.entities.audit_log import AuditLog
+from shared_core.domain.value_objects.enums import AuditOperation
 from shared_core.domains import Domain
 
 
 async def _persist_audit_log(
     event: Event,
-    operation: str,
+    operation: AuditOperation,
     uow: UnitOfWork,
 ) -> AuditLog | None:
     """
@@ -46,21 +47,21 @@ async def _persist_audit_log(
         await uow.commit()
 
     logger.info(
-        f"AuditLog {operation} for {event.entity_type} {event.id}: {audit_log.id}"
+        f"AuditLog {operation.value} for {event.entity_type} {event.id}: {audit_log.id}"
     )
     return audit_log
 
 
 async def audit_entity_created(event: Event, uow: UnitOfWork) -> None:
     """Handler para registrar auditoria de criação de entidade."""
-    await _persist_audit_log(event, "CREATE", uow)
+    await _persist_audit_log(event, AuditOperation.CREATE, uow)
 
 
 async def audit_entity_updated(event: Event, uow: UnitOfWork) -> None:
     """Handler para registrar auditoria de atualização de entidade."""
-    await _persist_audit_log(event, "UPDATE", uow)
+    await _persist_audit_log(event, AuditOperation.UPDATE, uow)
 
 
 async def audit_entity_deleted(event: Event, uow: UnitOfWork) -> None:
     """Handler para registrar auditoria de exclusão de entidade."""
-    await _persist_audit_log(event, "DELETE", uow)
+    await _persist_audit_log(event, AuditOperation.DELETE, uow)
