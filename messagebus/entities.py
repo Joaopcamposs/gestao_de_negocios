@@ -94,6 +94,29 @@ class AuditBase:
         return self.deleted_at is not None
 
 
+@dataclass(frozen=True, kw_only=True)
+class AuditReadBase:
+    """
+    Classe base imutável com campos de auditoria para entidades de leitura.
+
+    Versão frozen de AuditBase, destinada a entidades de leitura (somente
+    consulta). Garante imutabilidade após a construção do objeto.
+    """
+
+    active: bool = True
+    created_at: datetime | None = None
+    created_by: UUID | None = None
+    updated_at: datetime | None = None
+    updated_by: UUID | None = None
+    deleted_at: datetime | None = None
+    deleted_by: UUID | None = None
+
+    @property
+    def is_deleted(self) -> bool:
+        """Retorna True se a entidade foi marcada como deletada (soft delete)."""
+        return self.deleted_at is not None
+
+
 @dataclass(kw_only=True)
 class Aggregate(AuditBase):
     """

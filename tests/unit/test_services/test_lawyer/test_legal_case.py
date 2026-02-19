@@ -2,6 +2,7 @@
 
 from datetime import date
 
+import pytest
 import uuid7
 
 from messagebus.entities import OperationType
@@ -172,9 +173,9 @@ class TestLegalCaseEvents:
 class TestLegalCaseEntity:
     """Testes para a entidade de leitura LegalCase."""
 
-    def test_entity_inherits_audit_base(self) -> None:
-        """Verifica que a entidade LegalCase herda os campos de auditoria de AuditBase."""
-        from messagebus.entities import AuditBase
+    def test_entity_is_frozen(self) -> None:
+        """Verifica que a entidade LegalCase é imutável (frozen) e herda AuditReadBase."""
+        from messagebus.entities import AuditReadBase
 
         entity = LegalCaseEntity(
             id=uuid7.create(),
@@ -182,11 +183,12 @@ class TestLegalCaseEntity:
             case_number="001",
             client_name="Test",
         )
-        assert isinstance(entity, AuditBase)
+        assert isinstance(entity, AuditReadBase)
         assert entity.created_at is None
-        assert entity.updated_at is None
         assert entity.deleted_at is None
-        assert entity.deleted_by is None
+
+        with pytest.raises(AttributeError):
+            setattr(entity, "client_name", "Changed")
 
     def test_entity_with_optional_fields(self) -> None:
         entity = LegalCaseEntity(

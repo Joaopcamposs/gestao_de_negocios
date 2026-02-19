@@ -4,11 +4,11 @@ from dataclasses import dataclass
 from datetime import date
 from uuid import UUID
 
-from messagebus.entities import AuditBase
+from messagebus.entities import AuditReadBase
 
 
-@dataclass(kw_only=True)
-class Patient(AuditBase):
+@dataclass(frozen=True, kw_only=True)
+class Patient(AuditReadBase):
     """Entidade de leitura que representa um paciente."""
 
     id: UUID

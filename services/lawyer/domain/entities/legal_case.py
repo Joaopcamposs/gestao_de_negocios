@@ -4,12 +4,12 @@ from dataclasses import dataclass
 from datetime import date
 from uuid import UUID
 
-from messagebus.entities import AuditBase
+from messagebus.entities import AuditReadBase
 from services.lawyer.domain.value_objects.enums import LegalCaseStatus
 
 
-@dataclass(kw_only=True)
-class LegalCase(AuditBase):
+@dataclass(frozen=True, kw_only=True)
+class LegalCase(AuditReadBase):
     """Entidade de leitura que representa um processo jurídico."""
 
     id: UUID
