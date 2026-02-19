@@ -32,7 +32,7 @@ async def create_patient(command: CreatePatient, uow: UnitOfWork) -> UUID:
             birth_date=command.birth_date,
             notes=command.notes,
         )
-        patient.create()
+        patient.create(user_id=uow.user_id)
 
         await domain_repo.add(patient)
         await uow.commit()
@@ -51,6 +51,7 @@ async def update_patient(command: UpdatePatient, uow: UnitOfWork) -> None:
             phone=command.new_phone,
             birth_date=command.new_birth_date,
             notes=command.new_notes,
+            user_id=uow.user_id,
         )
 
         await domain_repo.add(patient)
@@ -63,7 +64,7 @@ async def delete_patient(command: DeletePatient, uow: UnitOfWork) -> None:
         domain_repo: PatientDomainRepo = cast(PatientDomainRepo, uow.domain_repo)
 
         patient = await domain_repo.get_by_cpf(cpf=command.cpf, company=command.company)
-        patient.delete()
+        patient.delete(user_id=uow.user_id)
 
         await domain_repo.remove(patient)
         await uow.commit()

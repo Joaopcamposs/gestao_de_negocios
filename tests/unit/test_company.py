@@ -231,6 +231,44 @@ class TestCompanyAggregate:
 
         assert hash(company) == hash(company.id)
 
+    def test_create_sets_audit_fields(self) -> None:
+        """Verifica que create() preenche created_at e created_by."""
+        user_id = uuid7.create()
+        company = _make_company()
+        company.create(password="secret", user_id=user_id)
+
+        assert company.created_at is not None
+        assert company.created_by == user_id
+        assert company.updated_at is None
+        assert company.deleted_at is None
+
+    def test_update_sets_audit_fields(self) -> None:
+        """Verifica que update() preenche updated_at e updated_by."""
+        user_id = uuid7.create()
+        company = _make_company()
+        company.update(legal_name="Nova Acme", user_id=user_id)
+
+        assert company.updated_at is not None
+        assert company.updated_by == user_id
+        assert company.created_at is None
+
+    def test_delete_sets_audit_fields(self) -> None:
+        """Verifica que delete() preenche deleted_at e deleted_by."""
+        user_id = uuid7.create()
+        company = _make_company()
+        company.delete(user_id=user_id)
+
+        assert company.deleted_at is not None
+        assert company.deleted_by == user_id
+
+    def test_create_without_user_id_sets_timestamps(self) -> None:
+        """Verifica que create() sem user_id ainda preenche created_at."""
+        company = _make_company()
+        company.create(password="secret")
+
+        assert company.created_at is not None
+        assert company.created_by is None
+
 
 class TestCompanyCommands:
     """Testes para os comandos de Company."""

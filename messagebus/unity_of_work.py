@@ -11,6 +11,7 @@ from abc import ABC
 from collections.abc import Callable, Generator
 from enum import Enum
 from typing import Any
+from uuid import UUID
 
 from messagebus.entities import DomainRepository, UserBase, ViewRepository
 
@@ -106,6 +107,11 @@ class AbstractUnitOfWork(ABC):
         await self.session.close()
         await self.session.bind.dispose()
         self.session = None
+
+    @property
+    def user_id(self) -> UUID | None:
+        """Retorna o ID do usuário autenticado ou None se não houver usuário."""
+        return self.user.id if self.user else None
 
     async def commit(self) -> None:
         """Confirma todas as alterações na sessão."""

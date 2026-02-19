@@ -261,6 +261,49 @@ class TestUserAggregate:
         assert isinstance(user.events[0], UserCreated)
         assert isinstance(user.events[1], UserUpdated)
 
+    def test_create_sets_audit_fields(self) -> None:
+        """Verifica que create() preenche created_at e created_by."""
+        actor_id = uuid7.create()
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="test@example.com",
+            cpf="12345678901",
+            password="secret123",
+        )
+        user.create(user_id=actor_id)
+
+        assert user.created_at is not None
+        assert user.created_by == actor_id
+        assert user.updated_at is None
+
+    def test_update_sets_audit_fields(self) -> None:
+        """Verifica que update() preenche updated_at e updated_by."""
+        actor_id = uuid7.create()
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="test@example.com",
+            cpf="12345678901",
+            password="secret123",
+        )
+        user.update(email="new@example.com", user_id=actor_id)
+
+        assert user.updated_at is not None
+        assert user.updated_by == actor_id
+
+    def test_delete_sets_audit_fields(self) -> None:
+        """Verifica que delete() preenche deleted_at e deleted_by."""
+        actor_id = uuid7.create()
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="test@example.com",
+            cpf="12345678901",
+            password="secret123",
+        )
+        user.delete(user_id=actor_id)
+
+        assert user.deleted_at is not None
+        assert user.deleted_by == actor_id
+
     def test_hash_is_based_on_id(self) -> None:
         """Verifica que o hash é baseado no ID."""
         user = User.create_aggregate(

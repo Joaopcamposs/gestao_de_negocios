@@ -125,6 +125,40 @@ class TestLegalCaseAggregate:
         )
         assert hash(lc) == hash(lc.id)
 
+    def test_create_sets_audit_fields(self) -> None:
+        """Verifica que create() preenche created_at e created_by."""
+        actor_id = uuid7.create()
+        lc = LegalCase.create_aggregate(
+            company=_TEST_COMPANY_ID, case_number="001", client_name="Test"
+        )
+        lc.create(user_id=actor_id)
+
+        assert lc.created_at is not None
+        assert lc.created_by == actor_id
+        assert lc.updated_at is None
+
+    def test_update_sets_audit_fields(self) -> None:
+        """Verifica que update() preenche updated_at e updated_by."""
+        actor_id = uuid7.create()
+        lc = LegalCase.create_aggregate(
+            company=_TEST_COMPANY_ID, case_number="001", client_name="Test"
+        )
+        lc.update(client_name="Cliente Novo", user_id=actor_id)
+
+        assert lc.updated_at is not None
+        assert lc.updated_by == actor_id
+
+    def test_delete_sets_audit_fields(self) -> None:
+        """Verifica que delete() preenche deleted_at e deleted_by."""
+        actor_id = uuid7.create()
+        lc = LegalCase.create_aggregate(
+            company=_TEST_COMPANY_ID, case_number="001", client_name="Test"
+        )
+        lc.delete(user_id=actor_id)
+
+        assert lc.deleted_at is not None
+        assert lc.deleted_by == actor_id
+
 
 class TestLegalCaseCommands:
     """Testes para os comandos do LegalCase."""

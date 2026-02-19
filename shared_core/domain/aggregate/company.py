@@ -1,7 +1,6 @@
 """Módulo do agregado Company."""
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from uuid import UUID
 
 import uuid7
@@ -87,6 +86,7 @@ class Company(Aggregate):
         self,
         password: str,
         should_create_user: bool = True,
+        user_id: UUID | None = None,
     ) -> None:
         """
         Marca o agregado para inserção e emite eventos de criação.
@@ -96,11 +96,12 @@ class Company(Aggregate):
         também emite TimeToCreateCompanyAdminUser.
 
         Args:
-            user_id: ID do usuário que está criando a empresa (opcional).
             password: Senha para o usuário inicial da empresa.
             should_create_user: Se True, emite eventos para criar usuários.
+            user_id: ID do usuário que está criando a empresa (opcional).
         """
         self._operation_type = OperationType.INSERT
+        self._set_create_audit(user_id)
 
         new_data = {
             "legal_name": self.legal_name,
@@ -147,6 +148,7 @@ class Company(Aggregate):
         responsible_name: str | None = None,
         email: str | None = None,
         active: bool | None = None,
+        user_id: UUID | None = None,
     ) -> None:
         """
         Atualiza os dados da empresa e emite evento de atualização.
@@ -157,8 +159,10 @@ class Company(Aggregate):
             responsible_name: Novo nome do responsável (opcional).
             email: Novo email (opcional).
             active: Novo status de ativação (opcional).
+            user_id: ID do usuário que está realizando a atualização (opcional).
         """
         self._operation_type = OperationType.UPDATE
+        self._set_update_audit(user_id)
 
         old_data: dict = {}
         new_data: dict = {}
@@ -178,7 +182,7 @@ class Company(Aggregate):
             )
         )
 
-    def delete(self) -> None:
+    def delete(self, user_id: UUID | None = None) -> None:
         """Marca o agregado como deletado (soft delete) e emite evento de exclusão."""
         self._operation_type = OperationType.DELETE
 
@@ -192,7 +196,7 @@ class Company(Aggregate):
             "active": self.active,
         }
 
-        self.deleted_at = datetime.now(timezone.utc)
+        self._set_delete_audit(user_id)
 
         self.add_event(
             CompanyDeleted(

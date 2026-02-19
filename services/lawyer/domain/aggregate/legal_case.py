@@ -1,7 +1,7 @@
 """Módulo do agregado LegalCase do contexto advogado."""
 
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date
 from uuid import UUID
 
 import uuid7
@@ -67,9 +67,10 @@ class LegalCase(Aggregate):
             notes=notes,
         )
 
-    def create(self) -> None:
+    def create(self, user_id: UUID | None = None) -> None:
         """Marca o agregado para inserção e emite evento de criação."""
         self._operation_type = OperationType.INSERT
+        self._set_create_audit(user_id)
 
         new_data = {
             "case_number": self.case_number,
@@ -95,6 +96,7 @@ class LegalCase(Aggregate):
         description: str | None = None,
         status: str | None = None,
         notes: str | None = None,
+        user_id: UUID | None = None,
     ) -> None:
         """
         Atualiza os dados do processo e emite evento de atualização.
@@ -104,8 +106,10 @@ class LegalCase(Aggregate):
             description: Nova descrição (opcional).
             status: Novo status (opcional).
             notes: Novas observações (opcional).
+            user_id: ID do usuário que está realizando a atualização (opcional).
         """
         self._operation_type = OperationType.UPDATE
+        self._set_update_audit(user_id)
 
         old_data: dict = {}
         new_data: dict = {}
@@ -125,7 +129,7 @@ class LegalCase(Aggregate):
             )
         )
 
-    def delete(self) -> None:
+    def delete(self, user_id: UUID | None = None) -> None:
         """Marca o agregado como deletado (soft delete) e emite evento de exclusão."""
         self._operation_type = OperationType.DELETE
 
@@ -138,7 +142,7 @@ class LegalCase(Aggregate):
             "notes": self.notes,
         }
 
-        self.deleted_at = datetime.now(timezone.utc)
+        self._set_delete_audit(user_id)
 
         self.add_event(
             LegalCaseDeleted(

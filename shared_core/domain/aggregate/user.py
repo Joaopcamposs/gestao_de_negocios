@@ -1,7 +1,6 @@
 """Módulo do agregado User."""
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from uuid import UUID
 
 import uuid7
@@ -64,9 +63,10 @@ class User(Aggregate, UserSecurity):
             admin=admin,
         )
 
-    def create(self) -> None:
+    def create(self, user_id: UUID | None = None) -> None:
         """Marca o agregado para inserção e emite evento de criação."""
         self._operation_type = OperationType.INSERT
+        self._set_create_audit(user_id)
 
         new_data = {
             "email": self.email,
@@ -90,6 +90,7 @@ class User(Aggregate, UserSecurity):
         password: str | None = None,
         active: bool | None = None,
         admin: bool | None = None,
+        user_id: UUID | None = None,
     ) -> None:
         """
         Atualiza os dados do usuário e emite evento de atualização.
@@ -99,8 +100,10 @@ class User(Aggregate, UserSecurity):
             password: Nova senha (opcional).
             active: Novo status de ativação (opcional).
             admin: Novo status de administrador (opcional).
+            user_id: ID do usuário que está realizando a atualização (opcional).
         """
         self._operation_type = OperationType.UPDATE
+        self._set_update_audit(user_id)
 
         old_data: dict = {}
         new_data: dict = {}
@@ -123,7 +126,7 @@ class User(Aggregate, UserSecurity):
             )
         )
 
-    def delete(self) -> None:
+    def delete(self, user_id: UUID | None = None) -> None:
         """Marca o agregado como deletado (soft delete) e emite evento de exclusão."""
         self._operation_type = OperationType.DELETE
 
@@ -134,7 +137,7 @@ class User(Aggregate, UserSecurity):
             "admin": self.admin,
         }
 
-        self.deleted_at = datetime.now(timezone.utc)
+        self._set_delete_audit(user_id)
 
         self.add_event(
             UserDeleted(
@@ -207,4 +210,4 @@ class PublicUser(Aggregate, UserSecurity):
     def remove(self) -> None:
         """Marca o agregado como deletado (soft delete)."""
         self._operation_type = OperationType.DELETE
-        self.deleted_at = datetime.now(timezone.utc)
+        self._set_delete_audit(user_id=None)

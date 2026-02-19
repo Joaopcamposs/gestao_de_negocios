@@ -140,6 +140,40 @@ class TestPatientAggregate:
         )
         assert hash(patient) == hash(patient.id)
 
+    def test_create_sets_audit_fields(self) -> None:
+        """Verifica que create() preenche created_at e created_by."""
+        actor_id = uuid7.create()
+        patient = Patient.create_aggregate(
+            company=_TEST_COMPANY_ID, name="Test", cpf="11111111111"
+        )
+        patient.create(user_id=actor_id)
+
+        assert patient.created_at is not None
+        assert patient.created_by == actor_id
+        assert patient.updated_at is None
+
+    def test_update_sets_audit_fields(self) -> None:
+        """Verifica que update() preenche updated_at e updated_by."""
+        actor_id = uuid7.create()
+        patient = Patient.create_aggregate(
+            company=_TEST_COMPANY_ID, name="Test", cpf="11111111111"
+        )
+        patient.update(name="Novo Nome", user_id=actor_id)
+
+        assert patient.updated_at is not None
+        assert patient.updated_by == actor_id
+
+    def test_delete_sets_audit_fields(self) -> None:
+        """Verifica que delete() preenche deleted_at e deleted_by."""
+        actor_id = uuid7.create()
+        patient = Patient.create_aggregate(
+            company=_TEST_COMPANY_ID, name="Test", cpf="11111111111"
+        )
+        patient.delete(user_id=actor_id)
+
+        assert patient.deleted_at is not None
+        assert patient.deleted_by == actor_id
+
 
 class TestPatientCommands:
     """Testes para os comandos do Patient."""

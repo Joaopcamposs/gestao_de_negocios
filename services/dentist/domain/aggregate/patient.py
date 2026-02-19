@@ -1,7 +1,7 @@
 """Módulo do agregado Patient do contexto dentista."""
 
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date
 from uuid import UUID
 
 import uuid7
@@ -63,9 +63,10 @@ class Patient(Aggregate):
             notes=notes,
         )
 
-    def create(self) -> None:
+    def create(self, user_id: UUID | None = None) -> None:
         """Marca o agregado para inserção e emite evento de criação."""
         self._operation_type = OperationType.INSERT
+        self._set_create_audit(user_id)
 
         new_data = {
             "name": self.name,
@@ -90,6 +91,7 @@ class Patient(Aggregate):
         phone: str | None = None,
         birth_date: date | None = None,
         notes: str | None = None,
+        user_id: UUID | None = None,
     ) -> None:
         """
         Atualiza os dados do paciente e emite evento de atualização.
@@ -99,8 +101,10 @@ class Patient(Aggregate):
             phone: Novo telefone (opcional).
             birth_date: Nova data de nascimento (opcional).
             notes: Novas observações (opcional).
+            user_id: ID do usuário que está realizando a atualização (opcional).
         """
         self._operation_type = OperationType.UPDATE
+        self._set_update_audit(user_id)
 
         old_data: dict = {}
         new_data: dict = {}
@@ -120,7 +124,7 @@ class Patient(Aggregate):
             )
         )
 
-    def delete(self) -> None:
+    def delete(self, user_id: UUID | None = None) -> None:
         """Marca o agregado como deletado (soft delete) e emite evento de exclusão."""
         self._operation_type = OperationType.DELETE
 
@@ -132,7 +136,7 @@ class Patient(Aggregate):
             "notes": self.notes,
         }
 
-        self.deleted_at = datetime.now(timezone.utc)
+        self._set_delete_audit(user_id)
 
         self.add_event(
             PatientDeleted(
