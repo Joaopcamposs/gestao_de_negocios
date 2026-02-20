@@ -70,35 +70,35 @@ run-lawyer:
 	uvicorn services.lawyer.main:app --host 0.0.0.0 --port 8002 --reload
 
 # ── Docker (testes) ───────────────────────────────────────────────
-test-db-up:
+test-env:
 	docker compose -f $(INFRA)/docker-compose.test.yml -p $(COMPOSE_TEST_NAME) up -d --wait
 
-test-db-down:
+test-env-down:
 	docker compose -f $(INFRA)/docker-compose.test.yml -p $(COMPOSE_TEST_NAME) down -v
 
 # ── Testes ────────────────────────────────────────────────────────
 test-unit:
 	python -m pytest tests/unit/ -v
 
-test-integration: test-db-up
+test-integration: test-env
 	python -m pytest tests/integration/ -v; \
-	$(MAKE) test-db-down
+	$(MAKE) test-env-down
 
-test-dentist: test-db-up
+test-dentist: test-env
 	python -m pytest tests/unit/test_services/test_dentist/ tests/integration/test_services/test_dentist/ -v; \
-	$(MAKE) test-db-down
+	$(MAKE) test-env-down
 
-test-lawyer: test-db-up
+test-lawyer: test-env
 	python -m pytest tests/unit/test_services/test_lawyer/ tests/integration/test_services/test_lawyer/ -v; \
-	$(MAKE) test-db-down
+	$(MAKE) test-env-down
 
-test-all: test-db-up
+test-all: test-env
 	python -m pytest tests/ -v; \
-	$(MAKE) test-db-down
+	$(MAKE) test-env-down
 
-test-cov: test-db-up
+test-cov: test-env
 	python -m pytest tests/ -v --cov=shared_core --cov=services --cov=infra --cov=messagebus --cov-report=term-missing; \
-	$(MAKE) test-db-down
+	$(MAKE) test-env-down
 
 # ── Limpeza ───────────────────────────────────────────────────────
 docker-clean:
@@ -138,6 +138,8 @@ help:
 	@echo ""
 	@echo "  Testes"
 	@echo "  ──────────────────────────────────────────────────"
+	@echo "  make test-env          → Iniciar ambiente de testes"
+	@echo "  make test-env-down     → Encerrar ambiente de testes"
 	@echo "  make test-unit         → Testes unitários"
 	@echo "  make test-integration  → Testes de integração"
 	@echo "  make test-dentist      → Testes do dentista"
