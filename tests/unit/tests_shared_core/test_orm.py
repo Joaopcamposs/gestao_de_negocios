@@ -10,5 +10,3 @@ class TestORMInit:
 
         assert hasattr(orm_module, "__name__")
         orm_module.start_mappers()
-
-

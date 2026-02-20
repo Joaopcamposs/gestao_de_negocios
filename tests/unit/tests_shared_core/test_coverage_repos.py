@@ -70,7 +70,6 @@ class TestPaymentDomainRepoRemove:
         session = _make_session()
         repo = PaymentDomainRepo(session=session)
 
-        from datetime import datetime, timezone
 
         payment = Payment.create_aggregate(
             company=_COMPANY_ID,
@@ -81,5 +80,3 @@ class TestPaymentDomainRepoRemove:
 
         await repo._remove(payment)
         session.execute.assert_awaited()
-
-
