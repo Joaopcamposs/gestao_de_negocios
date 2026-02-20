@@ -1,6 +1,7 @@
 """Módulo da entidade de leitura Company."""
 
 from dataclasses import dataclass
+from datetime import datetime
 from uuid import UUID
 
 from messagebus.entities import AuditReadBase
@@ -17,3 +18,5 @@ class Company(AuditReadBase):
     cpf: str
     trade_name: str | None = None
     cnpj: str | None = None
+    payment_up_to_date: bool = True
+    last_payment_date: datetime | None = None

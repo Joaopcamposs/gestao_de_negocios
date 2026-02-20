@@ -8,6 +8,7 @@ from fastapi import Depends
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
 
+from shared_core.adapters.repository.view_repo.company import CompanyViewRepo
 from shared_core.adapters.repository.view_repo.user import UserViewRepo
 from shared_core.consts import ALGORITHM, SECRET_KEY, SERVICE_TYPE, oauth2_scheme
 from shared_core.domain.commands.security import AuthenticateUser
@@ -23,6 +24,7 @@ current_user: ContextVar["User"] = ContextVar("current_user")
 async def authenticate_user(command: AuthenticateUser, uow: UnitOfWork) -> Token | None:
     """
     Autentica um usuário pelo email e senha via usuário público.
+    Inclui alerta de pagamento no token se a empresa estiver com pagamento em atraso.
 
     Args:
         command: Comando de autenticação com email e senha.
@@ -40,10 +42,29 @@ async def authenticate_user(command: AuthenticateUser, uow: UnitOfWork) -> Token
         if not user.verify_password(command.password):
             return None
 
-        return user.generate_token(
+        token = user.generate_token(
             company_id=user.company,
             encrypted_email=user.email_encrypted,
         )
+
+    payment_alert: str | None = None
+    async with uow(Domain.company) as uow:
+        company_view_repo: CompanyViewRepo = cast(CompanyViewRepo, uow.view_repo)
+        companies = await company_view_repo.get_all()
+        for company in companies:
+            if str(company.id) == str(user.company):
+                if not company.payment_up_to_date:
+                    payment_alert = (
+                        "Atenção: o pagamento da sua empresa está em atraso. "
+                        "Regularize para evitar a inativação da conta."
+                    )
+                break
+
+    return Token(
+        access_token=token.access_token,
+        token_type=token.token_type,
+        payment_alert=payment_alert,
+    )
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> User:

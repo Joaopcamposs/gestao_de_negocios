@@ -16,6 +16,8 @@ class CreateUser(Command):
     password: str
     active: bool = True
     admin: bool = False
+    is_owner: bool = False
+    name: str | None = None
 
 
 @dataclass
@@ -27,6 +29,14 @@ class UpdateUser(Command):
     new_password: str | None = None
     new_active: bool | None = None
     new_admin: bool | None = None
+    new_name: str | None = None
+    new_street: str | None = None
+    new_number: str | None = None
+    new_zip_code: str | None = None
+    new_district: str | None = None
+    new_city: str | None = None
+    new_state: str | None = None
+    new_country: str | None = None
 
 
 @dataclass

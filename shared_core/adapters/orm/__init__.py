@@ -2,6 +2,8 @@
 
 from shared_core.adapters.orm.audit_log import audit_log_mapper  # noqa: F401
 from shared_core.adapters.orm.company import company_mapper  # noqa: F401
+from shared_core.adapters.orm.credit_card import credit_card_mapper  # noqa: F401
+from shared_core.adapters.orm.payment import payment_mapper  # noqa: F401
 from shared_core.adapters.orm.user import (
     public_user_mapper,  # noqa: F401
     user_mapper,  # noqa: F401

@@ -42,6 +42,8 @@ async def create_user(
             password=command_or_event.password,
             active=command_or_event.active,
             admin=command_or_event.admin,
+            is_owner=getattr(command_or_event, "is_owner", False),
+            name=getattr(command_or_event, "name", None),
         )
         user.create(user_id=uow.user_id)
 
@@ -64,6 +66,14 @@ async def update_user(command: UpdateUser, uow: UnitOfWork) -> None:
             password=command.new_password,
             active=command.new_active,
             admin=command.new_admin,
+            name=command.new_name,
+            street=command.new_street,
+            number=command.new_number,
+            zip_code=command.new_zip_code,
+            district=command.new_district,
+            city=command.new_city,
+            state=command.new_state,
+            country=command.new_country,
             user_id=uow.user_id,
         )
 

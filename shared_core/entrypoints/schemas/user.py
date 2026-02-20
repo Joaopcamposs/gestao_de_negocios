@@ -15,6 +15,7 @@ class CreateUserSchema(BaseModel):
     cpf: str
     active: bool
     admin: bool
+    name: str | None = None
 
 
 class UpdateUserSchema(BaseModel):
@@ -26,6 +27,14 @@ class UpdateUserSchema(BaseModel):
     new_cpf: str | None = None
     new_active: bool | None = None
     new_admin: bool | None = None
+    new_name: str | None = None
+    new_street: str | None = None
+    new_number: str | None = None
+    new_zip_code: str | None = None
+    new_district: str | None = None
+    new_city: str | None = None
+    new_state: str | None = None
+    new_country: str | None = None
 
 
 class ReadUserSchema(ReadAuditSchema):
@@ -37,3 +46,12 @@ class ReadUserSchema(ReadAuditSchema):
     cpf: str
     active: bool
     admin: bool
+    is_owner: bool = False
+    name: str | None = None
+    street: str | None = None
+    number: str | None = None
+    zip_code: str | None = None
+    district: str | None = None
+    city: str | None = None
+    state: str | None = None
+    country: str | None = None

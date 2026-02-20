@@ -172,6 +172,8 @@ class CompanyDomainRepo(AbstractCompanyDomainRepo, UpsertMixin):
                 cpf=company.cpf,
                 cnpj=company.cnpj,
                 active=company.active,
+                payment_up_to_date=company.payment_up_to_date,
+                last_payment_date=company.last_payment_date,
                 created_at=company.created_at,
                 created_by=company.created_by,
                 updated_at=company.updated_at,
@@ -181,6 +183,92 @@ class CompanyDomainRepo(AbstractCompanyDomainRepo, UpsertMixin):
             )
 
         return aggregate
+
+    async def get_by_id(self, company_id: UUID) -> Company:
+        """
+        Busca uma empresa pelo ID.
+
+        Args:
+            company_id: UUID da empresa.
+
+        Returns:
+            Agregado Company encontrado.
+
+        Raises:
+            CompanyNotFound: Se a empresa não for encontrada.
+        """
+        async with self.session as session:
+            company = (
+                await session.execute(
+                    select(Company).where(
+                        Company.id == company_id,
+                        Company.deleted_at.is_(None),
+                    )
+                )
+            ).scalar_one_or_none()
+            if not company:
+                raise CompanyNotFound
+
+            return Company(
+                id=company.id,
+                legal_name=company.legal_name,
+                trade_name=company.trade_name,
+                responsible_name=company.responsible_name,
+                email=company.email,
+                cpf=company.cpf,
+                cnpj=company.cnpj,
+                active=company.active,
+                payment_up_to_date=company.payment_up_to_date,
+                last_payment_date=company.last_payment_date,
+                created_at=company.created_at,
+                created_by=company.created_by,
+                updated_at=company.updated_at,
+                updated_by=company.updated_by,
+                deleted_at=company.deleted_at,
+                deleted_by=company.deleted_by,
+            )
+
+    async def get_all_active(self) -> list[Company]:
+        """
+        Busca todas as empresas ativas e não deletadas.
+
+        Returns:
+            Lista de agregados Company ativos.
+        """
+        async with self.session as session:
+            companies = (
+                (
+                    await session.execute(
+                        select(Company).where(
+                            Company.active.is_(True),
+                            Company.deleted_at.is_(None),
+                        )
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            return [
+                Company(
+                    id=c.id,
+                    legal_name=c.legal_name,
+                    trade_name=c.trade_name,
+                    responsible_name=c.responsible_name,
+                    email=c.email,
+                    cpf=c.cpf,
+                    cnpj=c.cnpj,
+                    active=c.active,
+                    payment_up_to_date=c.payment_up_to_date,
+                    last_payment_date=c.last_payment_date,
+                    created_at=c.created_at,
+                    created_by=c.created_by,
+                    updated_at=c.updated_at,
+                    updated_by=c.updated_by,
+                    deleted_at=c.deleted_at,
+                    deleted_by=c.deleted_by,
+                )
+                for c in companies
+            ]
 
     async def _add(self, company: Company) -> None:
         """Persiste uma empresa no banco de dados (inserção ou atualização)."""
@@ -193,6 +281,8 @@ class CompanyDomainRepo(AbstractCompanyDomainRepo, UpsertMixin):
             "cpf": company.cpf,
             "cnpj": company.cnpj,
             "active": company.active,
+            "payment_up_to_date": company.payment_up_to_date,
+            "last_payment_date": company.last_payment_date,
             "created_at": company.created_at,
             "created_by": company.created_by,
             "updated_at": company.updated_at,

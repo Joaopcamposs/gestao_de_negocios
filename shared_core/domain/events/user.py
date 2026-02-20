@@ -43,6 +43,7 @@ class TimeToCreateInitialCompanyUser(Event):
     password: str
     active: bool
     admin: bool
+    is_owner: bool = True
 
 
 @dataclass(kw_only=True)
@@ -56,3 +57,4 @@ class TimeToCreateCompanyAdminUser(Event):
     password: str = FIRST_USER_PASSWORD
     active: bool = True
     admin: bool = True
+    is_owner: bool = False

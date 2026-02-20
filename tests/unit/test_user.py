@@ -910,3 +910,161 @@ class TestDomainExceptions:
 
         assert exc.status_code == 401
         assert exc.detail == "Could not validate credentials"
+
+    def test_credit_card_not_found_exception(self) -> None:
+        """Verifica a exceção CreditCardNotFound."""
+        from shared_core.domain.excecoes import CreditCardNotFound
+
+        exc = CreditCardNotFound()
+
+        assert exc.status_code == 404
+        assert exc.detail == "Credit card not found"
+
+    def test_payment_not_found_exception(self) -> None:
+        """Verifica a exceção PaymentNotFound."""
+        from shared_core.domain.excecoes import PaymentNotFound
+
+        exc = PaymentNotFound()
+
+        assert exc.status_code == 404
+        assert exc.detail == "Payment not found"
+
+    def test_company_payment_overdue_exception(self) -> None:
+        """Verifica a exceção CompanyPaymentOverdueException."""
+        from shared_core.domain.excecoes import CompanyPaymentOverdueException
+
+        exc = CompanyPaymentOverdueException()
+
+        assert exc.status_code == 402
+        assert "payment" in exc.detail.lower() or "overdue" in exc.detail.lower()
+
+
+class TestUserNewFields:
+    """Testes para os novos campos do agregado User (is_owner, name, endereço)."""
+
+    def test_user_is_owner_defaults_to_false(self) -> None:
+        """Verifica que is_owner é False por padrão."""
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="test@example.com",
+            cpf="12345678901",
+            password="secret123",
+        )
+
+        assert user.is_owner is False
+
+    def test_user_is_owner_can_be_set_true(self) -> None:
+        """Verifica que is_owner pode ser definido como True."""
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="owner@example.com",
+            cpf="12345678901",
+            password="secret123",
+            is_owner=True,
+        )
+
+        assert user.is_owner is True
+
+    def test_user_name_defaults_to_none(self) -> None:
+        """Verifica que name é None por padrão."""
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="test@example.com",
+            cpf="12345678901",
+            password="secret123",
+        )
+
+        assert user.name is None
+
+    def test_user_name_can_be_set(self) -> None:
+        """Verifica que name pode ser definido."""
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="test@example.com",
+            cpf="12345678901",
+            password="secret123",
+            name="João Silva",
+        )
+
+        assert user.name == "João Silva"
+
+    def test_user_address_fields_default_to_none(self) -> None:
+        """Verifica que todos os campos de endereço são None por padrão."""
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="test@example.com",
+            cpf="12345678901",
+            password="secret123",
+        )
+
+        assert user.street is None
+        assert user.number is None
+        assert user.zip_code is None
+        assert user.district is None
+        assert user.city is None
+        assert user.state is None
+        assert user.country is None
+
+    def test_user_address_fields_can_be_set(self) -> None:
+        """Verifica que campos de endereço podem ser definidos."""
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="test@example.com",
+            cpf="12345678901",
+            password="secret123",
+            street="Rua das Flores",
+            number="123",
+            zip_code="01310-100",
+            district="Bela Vista",
+            city="São Paulo",
+            state="SP",
+            country="Brasil",
+        )
+
+        assert user.street == "Rua das Flores"
+        assert user.number == "123"
+        assert user.zip_code == "01310-100"
+        assert user.district == "Bela Vista"
+        assert user.city == "São Paulo"
+        assert user.state == "SP"
+        assert user.country == "Brasil"
+
+    def test_user_update_preserves_is_owner(self) -> None:
+        """Verifica que update() preserva is_owner quando não informado."""
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="owner@example.com",
+            cpf="12345678901",
+            password="secret123",
+            is_owner=True,
+        )
+        user.update(email="newemail@example.com")
+
+        assert user.is_owner is True
+
+    def test_user_update_can_change_is_owner(self) -> None:
+        """Verifica que update() pode alterar is_owner."""
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="owner@example.com",
+            cpf="12345678901",
+            password="secret123",
+            is_owner=False,
+        )
+        user.update(is_owner=True)
+
+        assert user.is_owner is True
+
+    def test_user_update_can_change_name_and_address(self) -> None:
+        """Verifica que update() pode alterar name e campos de endereço."""
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="test@example.com",
+            cpf="12345678901",
+            password="secret123",
+        )
+        user.update(name="Maria Souza", city="Rio de Janeiro", state="RJ")
+
+        assert user.name == "Maria Souza"
+        assert user.city == "Rio de Janeiro"
+        assert user.state == "RJ"

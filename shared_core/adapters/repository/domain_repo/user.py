@@ -78,6 +78,8 @@ class UserDomainRepo(AbstractUserDomainRepo, PublicUserMixin, UpsertMixin):
         password: str,
         active: bool = True,
         admin: bool = False,
+        is_owner: bool = False,
+        name: str | None = None,
     ) -> User:
         """
         Cria um novo agregado User, verificando duplicidade de email.
@@ -89,6 +91,8 @@ class UserDomainRepo(AbstractUserDomainRepo, PublicUserMixin, UpsertMixin):
             password: Senha do usuário.
             active: Se o usuário está ativo.
             admin: Se o usuário é administrador.
+            is_owner: Se o usuário é o proprietário da empresa.
+            name: Nome completo do usuário (opcional).
 
         Returns:
             Nova instância do agregado User.
@@ -115,6 +119,8 @@ class UserDomainRepo(AbstractUserDomainRepo, PublicUserMixin, UpsertMixin):
             password=password,
             active=active,
             admin=admin,
+            is_owner=is_owner,
+            name=name,
         )
 
     async def get_by_email(self, email: str) -> User:
@@ -150,6 +156,15 @@ class UserDomainRepo(AbstractUserDomainRepo, PublicUserMixin, UpsertMixin):
                 _password_hash=user.password_hash,
                 active=user.active,
                 admin=user.admin,
+                is_owner=user.is_owner,
+                name=user.name,
+                street=user.street,
+                number=user.number,
+                zip_code=user.zip_code,
+                district=user.district,
+                city=user.city,
+                state=user.state,
+                country=user.country,
                 created_at=user.created_at,
                 created_by=user.created_by,
                 updated_at=user.updated_at,
@@ -193,6 +208,15 @@ class UserDomainRepo(AbstractUserDomainRepo, PublicUserMixin, UpsertMixin):
                 _password_hash=user.password_hash,
                 active=user.active,
                 admin=user.admin,
+                is_owner=user.is_owner,
+                name=user.name,
+                street=user.street,
+                number=user.number,
+                zip_code=user.zip_code,
+                district=user.district,
+                city=user.city,
+                state=user.state,
+                country=user.country,
                 created_at=user.created_at,
                 created_by=user.created_by,
                 updated_at=user.updated_at,
@@ -202,6 +226,57 @@ class UserDomainRepo(AbstractUserDomainRepo, PublicUserMixin, UpsertMixin):
             )
 
         return aggregate
+
+    async def get_all_by_company(self, company: UUID) -> list[User]:
+        """
+        Busca todos os usuários ativos de uma empresa.
+
+        Args:
+            company: UUID da empresa.
+
+        Returns:
+            Lista de agregados User da empresa.
+        """
+        async with self.session as session:
+            users = (
+                (
+                    await session.execute(
+                        select(User).where(
+                            User.company == company,
+                            User.deleted_at.is_(None),
+                        )
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            return [
+                User(
+                    id=u.id,
+                    company=u.company,
+                    email=u.email,
+                    cpf=u.cpf,
+                    _password_hash=u.password_hash,
+                    active=u.active,
+                    admin=u.admin,
+                    is_owner=u.is_owner,
+                    name=u.name,
+                    street=u.street,
+                    number=u.number,
+                    zip_code=u.zip_code,
+                    district=u.district,
+                    city=u.city,
+                    state=u.state,
+                    country=u.country,
+                    created_at=u.created_at,
+                    created_by=u.created_by,
+                    updated_at=u.updated_at,
+                    updated_by=u.updated_by,
+                    deleted_at=u.deleted_at,
+                    deleted_by=u.deleted_by,
+                )
+                for u in users
+            ]
 
     async def _add(self, user: User) -> None:
         """Persiste um usuário no banco de dados (inserção ou atualização)."""
@@ -213,6 +288,15 @@ class UserDomainRepo(AbstractUserDomainRepo, PublicUserMixin, UpsertMixin):
             "_password_hash": user.password_hash,
             "active": user.active,
             "admin": user.admin,
+            "is_owner": user.is_owner,
+            "name": user.name,
+            "street": user.street,
+            "number": user.number,
+            "zip_code": user.zip_code,
+            "district": user.district,
+            "city": user.city,
+            "state": user.state,
+            "country": user.country,
             "created_at": user.created_at,
             "created_by": user.created_by,
             "updated_at": user.updated_at,

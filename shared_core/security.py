@@ -65,6 +65,41 @@ class UserSecurity:
         nonce, ct = email[:12], email[12:]
         return aesgcm.decrypt(nonce, ct, None).decode()
 
+    @staticmethod
+    def generate_card_key() -> bytes:
+        """Gera uma chave AES aleatória de 256 bits para uso por cartão."""
+        return os.urandom(32)
+
+    @staticmethod
+    def encrypt_card_key(card_key: bytes) -> bytes:
+        """Criptografa a chave do cartão com a chave mestre AES-GCM."""
+        aesgcm = AESGCM(AES_KEY)
+        nonce = os.urandom(12)
+        ct = aesgcm.encrypt(nonce, card_key, None)
+        return nonce + ct
+
+    @staticmethod
+    def decrypt_card_key(encrypted_card_key: bytes) -> bytes:
+        """Descriptografa a chave do cartão usando a chave mestre AES-GCM."""
+        aesgcm = AESGCM(AES_KEY)
+        nonce, ct = encrypted_card_key[:12], encrypted_card_key[12:]
+        return aesgcm.decrypt(nonce, ct, None)
+
+    @staticmethod
+    def encrypt_card_field(value: str, card_key: bytes) -> bytes:
+        """Criptografa um campo do cartão com a chave específica do cartão."""
+        aesgcm = AESGCM(card_key)
+        nonce = os.urandom(12)
+        ct = aesgcm.encrypt(nonce, value.encode(), None)
+        return nonce + ct
+
+    @staticmethod
+    def decrypt_card_field(encrypted_value: bytes, card_key: bytes) -> str:
+        """Descriptografa um campo do cartão com a chave específica do cartão."""
+        aesgcm = AESGCM(card_key)
+        nonce, ct = encrypted_value[:12], encrypted_value[12:]
+        return aesgcm.decrypt(nonce, ct, None).decode()
+
     def generate_token(
         self,
         company_id: UUID,

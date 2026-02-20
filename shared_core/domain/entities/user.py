@@ -16,6 +16,15 @@ class User(AuditBase, UserBase, UserSecurity):
     email: str
     cpf: str
     admin: bool
+    is_owner: bool = False
+    name: str | None = None
+    street: str | None = None
+    number: str | None = None
+    zip_code: str | None = None
+    district: str | None = None
+    city: str | None = None
+    state: str | None = None
+    country: str | None = None
 
 
 @dataclass(kw_only=True)

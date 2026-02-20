@@ -24,6 +24,15 @@ class User(Aggregate, UserSecurity):
     email: str
     cpf: str
     admin: bool
+    is_owner: bool = False
+    name: str | None = None
+    street: str | None = None
+    number: str | None = None
+    zip_code: str | None = None
+    district: str | None = None
+    city: str | None = None
+    state: str | None = None
+    country: str | None = None
 
     def __hash__(self) -> int:
         return hash(self.id)
@@ -36,6 +45,15 @@ class User(Aggregate, UserSecurity):
         password: str,
         active: bool = True,
         admin: bool = False,
+        is_owner: bool = False,
+        name: str | None = None,
+        street: str | None = None,
+        number: str | None = None,
+        zip_code: str | None = None,
+        district: str | None = None,
+        city: str | None = None,
+        state: str | None = None,
+        country: str | None = None,
     ) -> "User":
         """
         Cria uma nova instância do agregado User.
@@ -47,6 +65,15 @@ class User(Aggregate, UserSecurity):
             password: Senha do usuário.
             active: Se o usuário está ativo.
             admin: Se o usuário é administrador.
+            is_owner: Se o usuário é o proprietário da empresa.
+            name: Nome completo do usuário (opcional).
+            street: Logradouro do endereço (opcional).
+            number: Número do endereço (opcional).
+            zip_code: CEP do endereço (opcional).
+            district: Bairro do endereço (opcional).
+            city: Cidade do endereço (opcional).
+            state: Estado do endereço (opcional).
+            country: País do endereço (opcional).
 
         Returns:
             Nova instância de User com ID gerado.
@@ -61,6 +88,15 @@ class User(Aggregate, UserSecurity):
             _password_hash=hash_password,
             active=active,
             admin=admin,
+            is_owner=is_owner,
+            name=name,
+            street=street,
+            number=number,
+            zip_code=zip_code,
+            district=district,
+            city=city,
+            state=state,
+            country=country,
         )
 
     def create(self, user_id: UUID | None = None) -> None:
@@ -73,6 +109,7 @@ class User(Aggregate, UserSecurity):
             "cpf": self.cpf,
             "active": self.active,
             "admin": self.admin,
+            "is_owner": self.is_owner,
         }
 
         self.add_event(
@@ -90,6 +127,15 @@ class User(Aggregate, UserSecurity):
         password: str | None = None,
         active: bool | None = None,
         admin: bool | None = None,
+        is_owner: bool | None = None,
+        name: str | None = None,
+        street: str | None = None,
+        number: str | None = None,
+        zip_code: str | None = None,
+        district: str | None = None,
+        city: str | None = None,
+        state: str | None = None,
+        country: str | None = None,
         user_id: UUID | None = None,
     ) -> None:
         """
@@ -100,6 +146,15 @@ class User(Aggregate, UserSecurity):
             password: Nova senha (opcional).
             active: Novo status de ativação (opcional).
             admin: Novo status de administrador (opcional).
+            is_owner: Novo status de proprietário (opcional).
+            name: Novo nome completo (opcional).
+            street: Novo logradouro (opcional).
+            number: Novo número do endereço (opcional).
+            zip_code: Novo CEP (opcional).
+            district: Novo bairro (opcional).
+            city: Nova cidade (opcional).
+            state: Novo estado (opcional).
+            country: Novo país (opcional).
             user_id: ID do usuário que está realizando a atualização (opcional).
         """
         self._operation_type = OperationType.UPDATE
@@ -111,6 +166,15 @@ class User(Aggregate, UserSecurity):
         self._track_change(old_data, new_data, "email", email)
         self._track_change(old_data, new_data, "active", active)
         self._track_change(old_data, new_data, "admin", admin)
+        self._track_change(old_data, new_data, "is_owner", is_owner)
+        self._track_change(old_data, new_data, "name", name)
+        self._track_change(old_data, new_data, "street", street)
+        self._track_change(old_data, new_data, "number", number)
+        self._track_change(old_data, new_data, "zip_code", zip_code)
+        self._track_change(old_data, new_data, "district", district)
+        self._track_change(old_data, new_data, "city", city)
+        self._track_change(old_data, new_data, "state", state)
+        self._track_change(old_data, new_data, "country", country)
 
         if password is not None:
             new_data["password"] = AuditConstant.REDACTED_PASSWORD
@@ -123,6 +187,27 @@ class User(Aggregate, UserSecurity):
                 entity_type=EntityType.USER,
                 old_data=old_data,
                 new_data=new_data,
+            )
+        )
+
+    def deactivate(self, user_id: UUID | None = None) -> None:
+        """
+        Inativa o usuário sem soft delete (para casos de atraso de pagamento).
+
+        Args:
+            user_id: ID do usuário que está realizando a inativação (opcional).
+        """
+        self._operation_type = OperationType.UPDATE
+        self._set_update_audit(user_id)
+        self.active = False
+
+        self.add_event(
+            UserUpdated(
+                id=self.id,
+                company=self.company,
+                entity_type=EntityType.USER,
+                old_data={"active": True},
+                new_data={"active": False},
             )
         )
 

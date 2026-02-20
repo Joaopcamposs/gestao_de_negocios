@@ -30,6 +30,8 @@ class EntityType(StrEnum):
         PATIENT: Entidade de paciente (contexto dentista)
         LEGAL_CASE: Entidade de processo jurídico (contexto advogado)
         AUDIT_LOG: Entidade de log de auditoria
+        CREDIT_CARD: Entidade de cartão de crédito
+        PAYMENT: Entidade de pagamento
     """
 
     COMPANY = "Company"
@@ -37,6 +39,8 @@ class EntityType(StrEnum):
     PATIENT = "Patient"
     LEGAL_CASE = "LegalCase"
     AUDIT_LOG = "AuditLog"
+    CREDIT_CARD = "CreditCard"
+    PAYMENT = "Payment"
 
 
 class LegalCaseStatus(StrEnum):
@@ -51,6 +55,20 @@ class LegalCaseStatus(StrEnum):
     OPEN = "open"
     CLOSED = "closed"
     PENDING = "pending"
+
+
+class PaymentStatus(StrEnum):
+    """Status possíveis para um pagamento.
+
+    Valores:
+        PENDING: Pagamento pendente
+        PAID: Pagamento realizado
+        OVERDUE: Pagamento em atraso
+    """
+
+    PENDING = "pending"
+    PAID = "paid"
+    OVERDUE = "overdue"
 
 
 class AuditConstant:
