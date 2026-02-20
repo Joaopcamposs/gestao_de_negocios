@@ -3,7 +3,7 @@
 from typing import cast
 from uuid import UUID
 
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 from messagebus.messagebus import logger
 from services.lawyer.adapters.repository.domain_repo.legal_case import LegalCaseDomainRepo
 from services.lawyer.domain.commands.legal_case import (

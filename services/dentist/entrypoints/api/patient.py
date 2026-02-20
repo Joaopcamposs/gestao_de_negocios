@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 from services.dentist.adapters.views.patient import view_patient
 from services.dentist.bootstrap import bootstrap_dentist
 from services.dentist.domain.commands.patient import (

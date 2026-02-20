@@ -19,7 +19,7 @@ from shared_core.domain.events.company import (
 from infra.database import delete_schema
 from shared_core.domains import Domain
 from messagebus.messagebus import logger
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 
 
 async def create_company(command: CreateCompany, uow: UnitOfWork) -> UUID:

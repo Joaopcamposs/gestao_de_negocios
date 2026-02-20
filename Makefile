@@ -63,6 +63,9 @@ deploy-all: deploy-dentist deploy-lawyer
 stop-all: stop-dentist stop-lawyer infra-down
 	@echo "✔ Todos os serviços e infra parados."
 
+destroy-all: stop-all infra-destroy
+	@echo "✔ Todos os serviços e infra parados. Infra destruído."
+
 # ── Docker (testes) ───────────────────────────────────────────────
 test-env:
 	docker compose -f $(INFRA)/docker-compose.test.yml -p $(COMPOSE_TEST_NAME) up -d --wait

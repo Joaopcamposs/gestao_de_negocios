@@ -17,7 +17,7 @@ from shared_core.domain.excecoes import (
     UserNotFound,
 )
 from shared_core.bootstrap import bootstrap
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 
 
 async def _create_company(legal_name: str = "Test Company", **overrides) -> UUID:

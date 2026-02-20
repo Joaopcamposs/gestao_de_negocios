@@ -15,7 +15,7 @@ from shared_core.domain.excecoes import (
     CompanyNotFound,
 )
 from shared_core.bootstrap import bootstrap
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 
 
 def _create_company_cmd(legal_name: str, **overrides) -> CreateCompany:

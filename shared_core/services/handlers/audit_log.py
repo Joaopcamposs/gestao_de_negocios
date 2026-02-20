@@ -5,7 +5,7 @@ from uuid import UUID
 
 from messagebus.entities import AuditableEvent
 from messagebus.messagebus import Event, logger
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 from shared_core.adapters.repository.domain_repo.audit_log import AuditLogDomainRepo
 from shared_core.domain.entities.audit_log import AuditLog
 from shared_core.domain.value_objects.enums import AuditOperation

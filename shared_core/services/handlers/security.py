@@ -15,7 +15,7 @@ from shared_core.domain.entities.user import User
 from shared_core.domain.excecoes import CredentialsException
 from shared_core.entrypoints.schemas.security import Token
 from shared_core.domains import Domain
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 
 current_user: ContextVar["User"] = ContextVar("current_user")
 

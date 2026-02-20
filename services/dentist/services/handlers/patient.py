@@ -4,7 +4,7 @@ from typing import cast
 from uuid import UUID
 
 from messagebus.messagebus import logger
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 from services.dentist.adapters.repository.domain_repo.patient import PatientDomainRepo
 from services.dentist.domain.commands.patient import (
     CreatePatient,

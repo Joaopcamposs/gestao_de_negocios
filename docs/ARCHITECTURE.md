@@ -105,7 +105,7 @@ O `messagebus/` é **totalmente independente**:
 from messagebus.unity_of_work import AbstractUnitOfWork
 
 # No código de aplicação (implementação concreta)
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 ```
 
 ---

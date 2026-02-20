@@ -6,7 +6,7 @@ from uuid import UUID
 import pytest
 import uuid7
 
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 from services.lawyer.adapters.views.legal_case import view_legal_case
 from services.lawyer.bootstrap import bootstrap_lawyer
 from services.lawyer.domain.commands.legal_case import (

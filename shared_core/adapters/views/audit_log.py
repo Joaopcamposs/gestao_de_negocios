@@ -3,7 +3,7 @@
 from typing import cast
 from uuid import UUID
 
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 from shared_core.adapters.repository.view_repo.audit_log import AuditLogViewRepo
 from shared_core.domain.entities.audit_log import AuditLog
 from shared_core.domains import Domain

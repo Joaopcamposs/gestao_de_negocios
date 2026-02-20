@@ -22,7 +22,7 @@ from shared_core.domain.events.user import (
 )
 from shared_core.domains import Domain
 from messagebus.messagebus import logger
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 
 
 async def create_user(

@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 from shared_core.adapters.views.audit_log import view_audit_log
 from shared_core.consts import SERVICE_TYPE
 from shared_core.entrypoints.schemas.audit_log import ReadAuditLogSchema

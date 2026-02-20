@@ -3,8 +3,7 @@
 from messagebus.bootstrap import bootstrap_base
 from messagebus.entities import UserBase
 from messagebus.messagebus import CommandHandlers, EventHandlers, MessageBus
-from messagebus.unity_of_work import AbstractUnitOfWork
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import AbstractUnitOfWork, UnitOfWork
 
 SERVICE_TYPE = "dentist"
 

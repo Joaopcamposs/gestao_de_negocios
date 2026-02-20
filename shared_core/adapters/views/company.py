@@ -7,7 +7,7 @@ from shared_core.adapters.repository.view_repo.company import (
 )
 from shared_core.domain.entities.company import Company
 from shared_core.domains import Domain
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 
 
 async def view_company(
