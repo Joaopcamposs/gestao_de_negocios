@@ -1,4 +1,4 @@
-# Barramento de Mensagens — Plataforma Multi-Serviço
+# Gestão de Negócios — Plataforma Multi-Serviço
 
 Plataforma multi-serviço para gerenciamento de clientes de diferentes profissões, implementada com **Python 3.11**, **FastAPI**, **SQLAlchemy** (async) e **PostgreSQL**. Segue os padrões de **Domain-Driven Design (DDD)**, **CQRS** e **Event-Driven Architecture**.
 
