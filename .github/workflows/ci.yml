@@ -64,7 +64,7 @@ jobs:
         run: uv sync --group dev
 
       - name: Executar testes unitários
-        run: uv run python -m pytest tests/unit/ -v --tb=short
+        run: uv run python -m pytest tests/unit/ -vvv --tb=long --capture=no
 
   test-integration:
     name: Testes de Integração

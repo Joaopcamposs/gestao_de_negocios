@@ -6,14 +6,15 @@ export INFRA=infra/applications
 ruff:
 	ruff format . && ruff check . --fix
 
-lint:
-	ruff format --check . && ruff check .
+lint: ruff
 
-typecheck:
+mypy:
 	mypy shared_core/ services/ infra/ messagebus/ libs/
 
+typecheck: mypy
+
 check: lint typecheck
-	@echo "✔ Lint e type-check passaram."
+	@echo "✔ Lint (ruff) e type-check (mypy) passaram."
 
 # ── Infra (Postgres compartilhado) ─────────────────────────────────
 infra-up:
@@ -61,13 +62,6 @@ deploy-all: deploy-dentist deploy-lawyer
 
 stop-all: stop-dentist stop-lawyer infra-down
 	@echo "✔ Todos os serviços e infra parados."
-
-# ── Dev local (sem Docker, requer postgres local) ─────────────────
-run-dentist:
-	uvicorn services.dentist.main:app --host 0.0.0.0 --port 8001 --reload
-
-run-lawyer:
-	uvicorn services.lawyer.main:app --host 0.0.0.0 --port 8002 --reload
 
 # ── Docker (testes) ───────────────────────────────────────────────
 test-env:
@@ -130,11 +124,6 @@ help:
 	@echo "  make logs-dentist      → Logs do Dentist"
 	@echo "  make logs-lawyer       → Logs do Lawyer"
 	@echo "  make infra-logs        → Logs do Postgres"
-	@echo ""
-	@echo "  Dev local (sem Docker)"
-	@echo "  ──────────────────────────────────────────────────"
-	@echo "  make run-dentist       → Dentist na porta 8001"
-	@echo "  make run-lawyer        → Lawyer na porta 8002"
 	@echo ""
 	@echo "  Testes"
 	@echo "  ──────────────────────────────────────────────────"
