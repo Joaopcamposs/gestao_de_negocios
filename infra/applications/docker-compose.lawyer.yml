@@ -5,18 +5,18 @@ services:
       dockerfile: infra/applications/Dockerfile.service
       args:
         SERVICE_MODULE: services.lawyer.main:app
-    container_name: barramento_lawyer_api
+    container_name: gestao_de_negocios_lawyer_api
     ports:
       - "8002:8000"
     environment:
       - IN_DOCKER=true
-      - DB_HOST=barramento_postgres
+      - DB_HOST=gestao_de_negocios_postgres
       - SERVICE_TYPE=lawyer
     env_file:
       - ../../.env
     networks:
-      - barramento_network
+      - gestao_de_negocios_network
 
 networks:
-  barramento_network:
+  gestao_de_negocios_network:
     external: true

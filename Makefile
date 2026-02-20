@@ -1,4 +1,4 @@
-export COMPOSE_NAME=barramento_de_mensagens
+export COMPOSE_NAME=gestao_de_negocios
 export COMPOSE_TEST_NAME=$(COMPOSE_NAME)_test
 export INFRA=infra/applications
 
