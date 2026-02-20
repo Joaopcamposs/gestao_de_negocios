@@ -1,4 +1,8 @@
-"""Testes unitários para o fluxo de Payment."""
+"""Testes unitários para o domínio de Payment no shared_core.
+
+Cobre o agregado Payment, comandos, eventos, entidade de leitura, schemas
+e os campos de pagamento no agregado Company.
+"""
 
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
@@ -329,7 +333,7 @@ class TestPaymentSchemas:
 
 
 class TestCompanyPaymentFields:
-    """Testes para os novos campos de pagamento no agregado Company."""
+    """Testes para os campos de pagamento no agregado Company."""
 
     def _make_company(self, **overrides) -> Company:
         """Função auxiliar para criar um agregado Company."""

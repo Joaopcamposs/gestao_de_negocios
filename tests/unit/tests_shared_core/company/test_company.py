@@ -1,9 +1,13 @@
-"""Testes unitários para o fluxo de Company."""
+"""Testes unitários para o domínio de Company no shared_core.
+
+Cobre o agregado Company, comandos, eventos, entidade de leitura e schemas.
+"""
 
 from uuid import UUID
 
 import uuid7
 
+from messagebus.entities import Aggregate, OperationType
 from shared_core.domain.aggregate.company import Company
 from shared_core.domain.commands.company import (
     CreateCompany,
@@ -25,7 +29,6 @@ from shared_core.entrypoints.schemas.company import (
     ReadCompanySchema,
     UpdateCompanySchema,
 )
-from messagebus.entities import Aggregate, OperationType
 
 
 def _make_company(**overrides) -> Company:
@@ -113,7 +116,7 @@ class TestCompanyAggregate:
 
     def test_create_emits_admin_user_event_when_not_first_company(self) -> None:
         """Verifica que create() emite evento de usuário admin quando não é a primeira empresa."""
-        company = _make_company()  # _first_company_id=None por padrão
+        company = _make_company()
         company.create(password="secret123")
 
         admin_events = [
@@ -269,6 +272,29 @@ class TestCompanyAggregate:
         assert company.created_at is not None
         assert company.created_by is None
 
+    def test_deactivate_sets_active_false(self) -> None:
+        """Verifica que deactivate() define active como False e emite evento."""
+        user_id = uuid7.create()
+        company = _make_company(active=True)
+        company.deactivate(user_id=user_id)
+
+        assert company.active is False
+        assert company.operation_type == OperationType.UPDATE
+        assert len(company.events) == 1
+
+    def test_first_company_id_property(self) -> None:
+        """Verifica que first_company_id retorna o ID da primeira empresa."""
+        first_id = uuid7.create()
+        company = _make_company(_first_company_id=first_id)
+
+        assert company.first_company_id == first_id
+
+    def test_first_company_id_none(self) -> None:
+        """Verifica que first_company_id retorna None quando não definido."""
+        company = _make_company()
+
+        assert company.first_company_id is None
+
 
 class TestCompanyCommands:
     """Testes para os comandos de Company."""
@@ -310,6 +336,18 @@ class TestCompanyCommands:
 
         assert command.trade_name is None
         assert command.cnpj is None
+
+    def test_create_company_first_company_id_property(self) -> None:
+        """Testa a propriedade first_company_id do CreateCompany."""
+        cmd = CreateCompany(
+            legal_name="Test",
+            responsible_name="R",
+            active=True,
+            cpf="12345678901",
+            email="e@e.com",
+            password="pass",
+        )
+        assert cmd.first_company_id is None
 
     def test_update_company_command(self) -> None:
         """Verifica a criação do comando UpdateCompany."""
@@ -415,6 +453,7 @@ class TestCompanyEntity:
 
     def test_company_entity_is_frozen(self) -> None:
         """Verifica que a entidade Company é imutável (frozen dataclass)."""
+        import pytest
         from messagebus.entities import AuditReadBase
 
         uid = uuid7.create()
@@ -430,8 +469,6 @@ class TestCompanyEntity:
         assert isinstance(entity, AuditReadBase)
         assert entity.created_at is None
         assert entity.deleted_at is None
-
-        import pytest
 
         with pytest.raises(AttributeError):
             setattr(entity, "legal_name", "New Name")
@@ -485,3 +522,25 @@ class TestCompanySchemas:
         assert schema.legal_name == "Acme Corp"
         assert schema.trade_name is None
         assert schema.cnpj is None
+
+
+class TestCompanyCreateNoUser:
+    """Testes para Company.create() com should_create_user=False."""
+
+    def test_create_without_user_emits_only_company_created(self) -> None:
+        """Verifica que create() com should_create_user=False emite apenas CompanyCreated."""
+        from shared_core.domain.events.company import CompanyCreated
+
+        company = Company.create_aggregate(
+            legal_name="Empresa Sem User",
+            trade_name=None,
+            responsible_name="R",
+            email="e@e.com",
+            cpf="12345678901",
+            cnpj=None,
+            active=True,
+        )
+        company.create(password="pass123", should_create_user=False)
+
+        assert len(company.events) == 1
+        assert isinstance(company.events[0], CompanyCreated)

@@ -1,4 +1,8 @@
-"""Testes unitários para o fluxo de CreditCard."""
+"""Testes unitários para o domínio de CreditCard no shared_core.
+
+Cobre o agregado CreditCard, criptografia, comandos, eventos,
+entidade de leitura e schemas.
+"""
 
 from uuid import UUID
 
@@ -81,7 +85,7 @@ class TestCreditCardAggregate:
         assert decrypted["holder_name"] == "John Doe"
 
     def test_two_cards_with_same_data_have_different_ciphertexts(self) -> None:
-        """Verifica que dois cartões com mesmos dados possuem cifragens diferentes (chaves diferentes)."""
+        """Verifica que dois cartões com mesmos dados possuem cifragens diferentes."""
         card1 = self._make_card(number="4111111111111111")
         card2 = self._make_card(number="4111111111111111")
 
@@ -196,6 +200,38 @@ class TestCreditCardEncryption:
         enc2 = UserSecurity.encrypt_card_field(value, card_key)
 
         assert enc1 != enc2
+
+    def test_decrypt_fields_on_entity(self) -> None:
+        """Testa decrypt_fields na entidade CreditCard."""
+        card_key = UserSecurity.generate_card_key()
+        encrypted_key = UserSecurity.encrypt_card_key(card_key)
+
+        number_enc = UserSecurity.encrypt_card_field("4111111111111111", card_key)
+        expiry_enc = UserSecurity.encrypt_card_field("12/30", card_key)
+        cvv_enc = UserSecurity.encrypt_card_field("123", card_key)
+        cpf_enc = UserSecurity.encrypt_card_field("12345678901", card_key)
+        holder_enc = UserSecurity.encrypt_card_field("Test", card_key)
+
+        from shared_core.domain.entities.credit_card import CreditCard as CreditCardEntity
+
+        card = CreditCardEntity(
+            id=uuid7.create(),
+            user_id=_TEST_USER_ID,
+            card_key_encrypted=encrypted_key,
+            number_encrypted=number_enc,
+            expiry_encrypted=expiry_enc,
+            cvv_encrypted=cvv_enc,
+            cpf_encrypted=cpf_enc,
+            holder_name_encrypted=holder_enc,
+        )
+
+        decrypted = card.decrypt_fields()
+
+        assert decrypted["number"] == "4111111111111111"
+        assert decrypted["expiry"] == "12/30"
+        assert decrypted["cvv"] == "123"
+        assert decrypted["cpf"] == "12345678901"
+        assert decrypted["holder_name"] == "Test"
 
 
 class TestCreditCardCommands:
