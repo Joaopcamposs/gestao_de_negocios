@@ -22,6 +22,14 @@ class UserNotFound(HTTPException):
 
 
 @dataclass
+class UserInactiveException(HTTPException):
+    """Exceção lançada quando o usuário está inativo."""
+
+    status_code: int = 403
+    detail: str = "User is inactive"
+
+
+@dataclass
 class CompanyAlreadyRegistered(HTTPException):
     """Exceção lançada quando o nome da empresa já está cadastrado."""
 

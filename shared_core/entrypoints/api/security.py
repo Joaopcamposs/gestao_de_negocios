@@ -9,7 +9,9 @@ from shared_core.domain.commands.security import AuthenticateUser
 from shared_core.domain.entities.user import User
 from shared_core.entrypoints.schemas.security import Token
 from shared_core.entrypoints.schemas.user import ReadUserSchema
-from shared_core.services.handlers.security import get_current_user
+from shared_core.services.handlers.security import (
+    get_current_active_user,
+)
 from shared_core.bootstrap import bootstrap
 from shared_core.consts import SERVICE_TYPE
 
@@ -37,7 +39,7 @@ async def login_for_access_token(
 
 @security_router.get("/user/me/", response_model=ReadUserSchema)
 async def read_users_me(
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
 ) -> User:
     """Retorna os dados do usuário autenticado."""
     return current_user
