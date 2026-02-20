@@ -4,4 +4,4 @@ repos:
     hooks:
       - id: ruff-format
       - id: ruff
-        args: [check, --fix]
+        args: [--fix]
