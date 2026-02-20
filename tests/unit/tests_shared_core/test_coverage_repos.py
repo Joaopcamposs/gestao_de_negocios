@@ -70,7 +70,6 @@ class TestPaymentDomainRepoRemove:
         session = _make_session()
         repo = PaymentDomainRepo(session=session)
 
-
         payment = Payment.create_aggregate(
             company=_COMPANY_ID,
             amount=100.0,
