@@ -18,4 +18,4 @@ services:
 
 networks:
   test_network:
-    name: barramento_test_network
+    name: gestao_de_negocios_test_network

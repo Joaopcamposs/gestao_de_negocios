@@ -14,7 +14,7 @@ Cada profissão é um **microserviço independente** com deploy isolado, mas tod
 ## Estrutura do Monorepo
 
 ```
-barramento_de_mensagens/
+gestao_de_negocios/
 │
 ├── messagebus/                         # LIB INDEPENDENTE (zero imports de infra/sqlalchemy)
 │   ├── messagebus.py                   # MessageBus, Command, Event
@@ -74,7 +74,7 @@ barramento_de_mensagens/
 │   │   ├── schema_handlers.py          # Criação de schemas multi-tenant
 │   │   └── initializers.py             # Inicialização da primeira empresa
 │   └── applications/                   # Docker e deploy
-│       ├── docker-compose.infra.yml    # Postgres compartilhado (rede barramento_network)
+│       ├── docker-compose.infra.yml    # Postgres compartilhado (rede gestao_de_negocios_network)
 │       ├── docker-compose.dentist.yml  # Dentist API (:8001)
 │       ├── docker-compose.lawyer.yml   # Lawyer API (:8002)
 │       ├── docker-compose.test.yml     # Postgres de testes (:54323)
@@ -105,7 +105,7 @@ O `messagebus/` é **totalmente independente**:
 from messagebus.unity_of_work import AbstractUnitOfWork
 
 # No código de aplicação (implementação concreta)
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 ```
 
 ---
@@ -145,12 +145,12 @@ SERVICE_DATABASES = {
 ### Arquitetura Docker
 
 ```
-docker-compose.infra.yml     → Postgres compartilhado (rede barramento_network, porta 54322)
-docker-compose.dentist.yml   → Dentist API (porta 8001, rede externa barramento_network)
-docker-compose.lawyer.yml    → Lawyer API (porta 8002, rede externa barramento_network)
+docker-compose.infra.yml     → Postgres compartilhado (rede gestao_de_negocios_network, porta 54322)
+docker-compose.dentist.yml   → Dentist API (porta 8001, rede externa gestao_de_negocios_network)
+docker-compose.lawyer.yml    → Lawyer API (porta 8002, rede externa gestao_de_negocios_network)
 ```
 
-- **Postgres é compartilhado** via rede Docker externa (`barramento_network`).
+- **Postgres é compartilhado** via rede Docker externa (`gestao_de_negocios_network`).
 - Cada serviço conecta à mesma instância Postgres, mas usa databases diferentes.
 - `deploy-*` chama `infra-up` automaticamente como dependência.
 
@@ -194,10 +194,10 @@ docker-compose.lawyer.yml    → Lawyer API (porta 8002, rede externa barramento
 
 ## Otimizações aplicadas
 
-### [.dockerignore](cci:7://file:///Users/joaopcamposs/Dev/barramento_de_mensagens/.dockerignore:0:0-0:0) — Build context ~190MB menor
+### [.dockerignore](cci:7://file:///Users/joaopcamposs/Dev/gestao_de_negocios/.dockerignore:0:0-0:0) — Build context ~190MB menor
 Excluídos: `.venv/`, `.git/`, `tests/`, `docs/`, `__pycache__/`, `.mypy_cache/`, `.pytest_cache/`, `.ruff_cache/`, `.env`
 
-### [Dockerfile.service](cci:7://file:///Users/joaopcamposs/Dev/barramento_de_mensagens/infra/applications/Dockerfile.service:0:0-0:0) — Multi-stage build
+### [Dockerfile.service](cci:7://file:///Users/joaopcamposs/Dev/gestao_de_negocios/infra/applications/Dockerfile.service:0:0-0:0) — Multi-stage build
 
 | Aspecto | Antes | Depois |
 |---------|-------|--------|
@@ -206,8 +206,8 @@ Excluídos: `.venv/`, `.git/`, `tests/`, `docs/`, `__pycache__/`, `.mypy_cache/`
 | **apt build-essential** | Instalado (produção) | Removido |
 | **Dev deps** (ruff, mypy, pytest) | Incluídas | Excluídas |
 | **Stages** | 1 | 2 (deps + final) |
-| **Layer caching** | Nenhum (COPY . . antes de deps) | [pyproject.toml](cci:7://file:///Users/joaopcamposs/Dev/barramento_de_mensagens/pyproject.toml:0:0-0:0) copiado primeiro |
+| **Layer caching** | Nenhum (COPY . . antes de deps) | [pyproject.toml](cci:7://file:///Users/joaopcamposs/Dev/gestao_de_negocios/pyproject.toml:0:0-0:0) copiado primeiro |
 
 ### Como funciona o cache
-1. **Stage `deps`** — copia só [pyproject.toml](cci:7://file:///Users/joaopcamposs/Dev/barramento_de_mensagens/pyproject.toml:0:0-0:0) + `uv.lock` → instala deps → **cacheado enquanto deps não mudam**
+1. **Stage `deps`** — copia só [pyproject.toml](cci:7://file:///Users/joaopcamposs/Dev/gestao_de_negocios/pyproject.toml:0:0-0:0) + `uv.lock` → instala deps → **cacheado enquanto deps não mudam**
 2. **Stage final** — copia venv pronta + código-fonte → **rebuild em <2s quando só muda código**

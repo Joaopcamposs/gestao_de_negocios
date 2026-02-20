@@ -5,6 +5,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from shared_core.entrypoints.schemas.base import ReadAuditSchema
+
 
 class CreatePatientSchema(BaseModel):
     """Schema para criação de paciente."""
@@ -26,14 +28,13 @@ class UpdatePatientSchema(BaseModel):
     new_notes: str | None = None
 
 
-class ReadPatientSchema(BaseModel):
+class ReadPatientSchema(ReadAuditSchema):
     """Schema de leitura de paciente."""
 
     id: UUID
     company: UUID
     name: str
     cpf: str
-    deleted: bool
     phone: str | None = None
     birth_date: date | None = None
     notes: str | None = None

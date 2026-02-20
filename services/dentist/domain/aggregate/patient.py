@@ -7,6 +7,7 @@ from uuid import UUID
 import uuid7
 
 from messagebus.entities import Aggregate, OperationType
+from services.dentist.domain.value_objects.enums import EntityType
 from services.dentist.domain.events.patient import (
     PatientCreated,
     PatientDeleted,
@@ -62,10 +63,27 @@ class Patient(Aggregate):
             notes=notes,
         )
 
-    def create(self) -> None:
+    def create(self, user_id: UUID | None = None) -> None:
         """Marca o agregado para inserção e emite evento de criação."""
         self._operation_type = OperationType.INSERT
-        self.add_event(PatientCreated(id=self.id, company=self.company))
+        self._set_create_audit(user_id)
+
+        new_data = {
+            "name": self.name,
+            "cpf": self.cpf,
+            "phone": self.phone,
+            "birth_date": str(self.birth_date) if self.birth_date else None,
+            "notes": self.notes,
+        }
+
+        self.add_event(
+            PatientCreated(
+                id=self.id,
+                company=self.company,
+                entity_type=EntityType.PATIENT,
+                new_data=new_data,
+            )
+        )
 
     def update(
         self,
@@ -73,6 +91,7 @@ class Patient(Aggregate):
         phone: str | None = None,
         birth_date: date | None = None,
         notes: str | None = None,
+        user_id: UUID | None = None,
     ) -> None:
         """
         Atualiza os dados do paciente e emite evento de atualização.
@@ -82,22 +101,48 @@ class Patient(Aggregate):
             phone: Novo telefone (opcional).
             birth_date: Nova data de nascimento (opcional).
             notes: Novas observações (opcional).
+            user_id: ID do usuário que está realizando a atualização (opcional).
         """
         self._operation_type = OperationType.UPDATE
+        self._set_update_audit(user_id)
 
-        if name is not None:
-            self.name = name
-        if phone is not None:
-            self.phone = phone
-        if birth_date is not None:
-            self.birth_date = birth_date
-        if notes is not None:
-            self.notes = notes
+        old_data: dict = {}
+        new_data: dict = {}
 
-        self.add_event(PatientUpdated(id=self.id, company=self.company))
+        self._track_change(old_data, new_data, "name", name)
+        self._track_change(old_data, new_data, "phone", phone)
+        self._track_change(old_data, new_data, "birth_date", birth_date, serializer=str)
+        self._track_change(old_data, new_data, "notes", notes)
 
-    def delete(self) -> None:
+        self.add_event(
+            PatientUpdated(
+                id=self.id,
+                company=self.company,
+                entity_type=EntityType.PATIENT,
+                old_data=old_data,
+                new_data=new_data,
+            )
+        )
+
+    def delete(self, user_id: UUID | None = None) -> None:
         """Marca o agregado como deletado (soft delete) e emite evento de exclusão."""
         self._operation_type = OperationType.DELETE
-        self.deleted = True
-        self.add_event(PatientDeleted(id=self.id, company=self.company))
+
+        old_data = {
+            "name": self.name,
+            "cpf": self.cpf,
+            "phone": self.phone,
+            "birth_date": str(self.birth_date) if self.birth_date else None,
+            "notes": self.notes,
+        }
+
+        self._set_delete_audit(user_id)
+
+        self.add_event(
+            PatientDeleted(
+                id=self.id,
+                company=self.company,
+                entity_type=EntityType.PATIENT,
+                old_data=old_data,
+            )
+        )

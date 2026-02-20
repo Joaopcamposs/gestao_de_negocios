@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:16
-    container_name: barramento_postgres
+    container_name: gestao_de_negocios_postgres
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
@@ -17,11 +17,11 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
     networks:
-      - barramento_network
+      - gestao_de_negocios_network
 
 volumes:
   pgdata:
 
 networks:
-  barramento_network:
-    name: barramento_network
+  gestao_de_negocios_network:
+    name: gestao_de_negocios_network

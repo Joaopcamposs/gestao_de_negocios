@@ -7,6 +7,7 @@ from uuid import UUID
 import uuid7
 
 from messagebus.entities import Aggregate, OperationType
+from services.lawyer.domain.value_objects.enums import EntityType, LegalCaseStatus
 from services.lawyer.domain.events.legal_case import (
     LegalCaseCreated,
     LegalCaseDeleted,
@@ -23,7 +24,7 @@ class LegalCase(Aggregate):
     case_number: str
     client_name: str
     description: str | None = None
-    status: str = "open"
+    status: LegalCaseStatus = LegalCaseStatus.OPEN
     open_date: date | None = None
     notes: str | None = None
 
@@ -36,7 +37,7 @@ class LegalCase(Aggregate):
         case_number: str,
         client_name: str,
         description: str | None = None,
-        status: str = "open",
+        status: LegalCaseStatus = LegalCaseStatus.OPEN,
         open_date: date | None = None,
         notes: str | None = None,
     ) -> "LegalCase":
@@ -48,7 +49,7 @@ class LegalCase(Aggregate):
             case_number: Número do processo.
             client_name: Nome do cliente.
             description: Descrição do processo (opcional).
-            status: Status do processo (padrão: 'open').
+            status: Status do processo (padrão: LegalCaseStatus.OPEN).
             open_date: Data de abertura (opcional).
             notes: Observações (opcional).
 
@@ -66,10 +67,28 @@ class LegalCase(Aggregate):
             notes=notes,
         )
 
-    def create(self) -> None:
+    def create(self, user_id: UUID | None = None) -> None:
         """Marca o agregado para inserção e emite evento de criação."""
         self._operation_type = OperationType.INSERT
-        self.add_event(LegalCaseCreated(id=self.id, company=self.company))
+        self._set_create_audit(user_id)
+
+        new_data = {
+            "case_number": self.case_number,
+            "client_name": self.client_name,
+            "description": self.description,
+            "status": self.status,
+            "open_date": str(self.open_date) if self.open_date else None,
+            "notes": self.notes,
+        }
+
+        self.add_event(
+            LegalCaseCreated(
+                id=self.id,
+                company=self.company,
+                entity_type=EntityType.LEGAL_CASE,
+                new_data=new_data,
+            )
+        )
 
     def update(
         self,
@@ -77,6 +96,7 @@ class LegalCase(Aggregate):
         description: str | None = None,
         status: str | None = None,
         notes: str | None = None,
+        user_id: UUID | None = None,
     ) -> None:
         """
         Atualiza os dados do processo e emite evento de atualização.
@@ -86,22 +106,49 @@ class LegalCase(Aggregate):
             description: Nova descrição (opcional).
             status: Novo status (opcional).
             notes: Novas observações (opcional).
+            user_id: ID do usuário que está realizando a atualização (opcional).
         """
         self._operation_type = OperationType.UPDATE
+        self._set_update_audit(user_id)
 
-        if client_name is not None:
-            self.client_name = client_name
-        if description is not None:
-            self.description = description
-        if status is not None:
-            self.status = status
-        if notes is not None:
-            self.notes = notes
+        old_data: dict = {}
+        new_data: dict = {}
 
-        self.add_event(LegalCaseUpdated(id=self.id, company=self.company))
+        self._track_change(old_data, new_data, "client_name", client_name)
+        self._track_change(old_data, new_data, "description", description)
+        self._track_change(old_data, new_data, "status", status)
+        self._track_change(old_data, new_data, "notes", notes)
 
-    def delete(self) -> None:
+        self.add_event(
+            LegalCaseUpdated(
+                id=self.id,
+                company=self.company,
+                entity_type=EntityType.LEGAL_CASE,
+                old_data=old_data,
+                new_data=new_data,
+            )
+        )
+
+    def delete(self, user_id: UUID | None = None) -> None:
         """Marca o agregado como deletado (soft delete) e emite evento de exclusão."""
         self._operation_type = OperationType.DELETE
-        self.deleted = True
-        self.add_event(LegalCaseDeleted(id=self.id, company=self.company))
+
+        old_data = {
+            "case_number": self.case_number,
+            "client_name": self.client_name,
+            "description": self.description,
+            "status": self.status,
+            "open_date": str(self.open_date) if self.open_date else None,
+            "notes": self.notes,
+        }
+
+        self._set_delete_audit(user_id)
+
+        self.add_event(
+            LegalCaseDeleted(
+                id=self.id,
+                company=self.company,
+                entity_type=EntityType.LEGAL_CASE,
+                old_data=old_data,
+            )
+        )

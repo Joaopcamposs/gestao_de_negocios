@@ -4,15 +4,15 @@ from abc import abstractmethod
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import insert, select, update
-from sqlalchemy.sql import Executable
+from sqlalchemy import select
 
-from messagebus.entities import DomainRepository, OperationType
+from messagebus.entities import DomainRepository
 from services.lawyer.domain.aggregate.legal_case import LegalCase
 from services.lawyer.domain.exceptions import (
     LegalCaseAlreadyRegistered,
     LegalCaseNotFound,
 )
+from shared_core.adapters.repository.mixins.upsert import UpsertMixin
 
 
 class AbstractLegalCaseDomainRepo(DomainRepository):
@@ -55,7 +55,7 @@ class AbstractLegalCaseDomainRepo(DomainRepository):
         raise NotImplementedError()
 
 
-class LegalCaseDomainRepo(AbstractLegalCaseDomainRepo):
+class LegalCaseDomainRepo(AbstractLegalCaseDomainRepo, UpsertMixin):
     """Implementação concreta do repositório de domínio de LegalCase."""
 
     async def get_by_case_number(self, case_number: str, company: UUID) -> LegalCase:
@@ -71,7 +71,7 @@ class LegalCaseDomainRepo(AbstractLegalCaseDomainRepo):
                     select(LegalCase).where(
                         LegalCase.case_number == case_number,
                         LegalCase.company == company,
-                        LegalCase.deleted == False,  # noqa: E712
+                        LegalCase.deleted_at.is_(None),
                     )
                 )
             ).scalar_one_or_none()
@@ -87,7 +87,13 @@ class LegalCaseDomainRepo(AbstractLegalCaseDomainRepo):
                 status=result.status,
                 open_date=result.open_date,
                 notes=result.notes,
-                deleted=result.deleted,
+                active=result.active,
+                created_at=result.created_at,
+                created_by=result.created_by,
+                updated_at=result.updated_at,
+                updated_by=result.updated_by,
+                deleted_at=result.deleted_at,
+                deleted_by=result.deleted_by,
             )
 
     async def create_aggregate(
@@ -112,7 +118,7 @@ class LegalCaseDomainRepo(AbstractLegalCaseDomainRepo):
                     select(LegalCase).where(
                         LegalCase.case_number == case_number,
                         LegalCase.company == company,
-                        LegalCase.deleted == False,  # noqa: E712
+                        LegalCase.deleted_at.is_(None),
                     )
                 )
             ).scalar_one_or_none()
@@ -140,27 +146,16 @@ class LegalCaseDomainRepo(AbstractLegalCaseDomainRepo):
             "status": legal_case.status,
             "open_date": legal_case.open_date,
             "notes": legal_case.notes,
-            "deleted": legal_case.deleted,
+            "active": legal_case.active,
+            "created_at": legal_case.created_at,
+            "created_by": legal_case.created_by,
+            "updated_at": legal_case.updated_at,
+            "updated_by": legal_case.updated_by,
+            "deleted_at": legal_case.deleted_at,
+            "deleted_by": legal_case.deleted_by,
         }
-
-        operation: Executable
-        match legal_case.operation_type:
-            case OperationType.INSERT:
-                operation = insert(LegalCase).values(data)
-            case OperationType.UPDATE:
-                operation = (
-                    update(LegalCase).where(LegalCase.id == legal_case.id).values(data)
-                )
-            case _:
-                raise ValueError("Unsupported operation type for domain repository.")
-
-        await self.session.execute(operation)
+        await self._execute_upsert(LegalCase, legal_case, data)
 
     async def _remove(self, legal_case: LegalCase) -> None:
         """Marca um processo como deletado no banco de dados (soft delete)."""
-        operation = (
-            update(LegalCase)
-            .where(LegalCase.id == legal_case.id)
-            .values({"deleted": True})
-        )
-        await self.session.execute(operation)
+        await self._execute_soft_delete(LegalCase, legal_case)

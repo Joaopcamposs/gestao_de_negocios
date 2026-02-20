@@ -1,4 +1,4 @@
-# Barramento de Mensagens — Plataforma Multi-Serviço
+# Gestão de Negócios — Plataforma Multi-Serviço
 
 Plataforma multi-serviço para gerenciamento de clientes de diferentes profissões, implementada com **Python 3.11**, **FastAPI**, **SQLAlchemy** (async) e **PostgreSQL**. Segue os padrões de **Domain-Driven Design (DDD)**, **CQRS** e **Event-Driven Architecture**.
 
@@ -61,7 +61,7 @@ Cada profissão é um **microserviço independente** com deploy isolado, compart
 ## Estrutura do Projeto
 
 ```
-barramento_de_mensagens/
+gestao_de_negocios/
 │
 ├── messagebus/                         # LIB INDEPENDENTE: Barramento de mensagens
 │   ├── messagebus.py                   # MessageBus, Command, Event
@@ -181,7 +181,7 @@ Cada serviço inclui automaticamente os endpoints do `shared_core` (empresa, usu
 ```bash
 # Clone o repositório
 git clone <repo-url>
-cd barramento_de_mensagens
+cd gestao_de_negocios
 
 # Instale o uv (se ainda não tiver)
 pip install uv
@@ -337,7 +337,7 @@ make test-lawyer
 
 1. **Criar pasta** `services/<nome>/` com a estrutura padrão (domain, adapters, entrypoints, services).
 2. **Registrar database** em `infra/database/service_registry.py`:
-   ```python
+   ``` python
    SERVICE_DATABASES = {
        ...,
        "<nome>": {"db_name": "db_<nome>"},

@@ -3,7 +3,7 @@
 from typing import cast
 from uuid import UUID
 
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 from messagebus.messagebus import logger
 from services.lawyer.adapters.repository.domain_repo.legal_case import LegalCaseDomainRepo
 from services.lawyer.domain.commands.legal_case import (
@@ -33,7 +33,7 @@ async def create_legal_case(command: CreateLegalCase, uow: UnitOfWork) -> UUID:
             open_date=command.open_date,
             notes=command.notes,
         )
-        legal_case.create()
+        legal_case.create(user_id=uow.user_id)
 
         await domain_repo.add(legal_case)
         await uow.commit()
@@ -54,6 +54,7 @@ async def update_legal_case(command: UpdateLegalCase, uow: UnitOfWork) -> None:
             description=command.new_description,
             status=command.new_status,
             notes=command.new_notes,
+            user_id=uow.user_id,
         )
 
         await domain_repo.add(legal_case)
@@ -68,7 +69,7 @@ async def delete_legal_case(command: DeleteLegalCase, uow: UnitOfWork) -> None:
         legal_case = await domain_repo.get_by_case_number(
             case_number=command.case_number, company=command.company
         )
-        legal_case.delete()
+        legal_case.delete(user_id=uow.user_id)
 
         await domain_repo.remove(legal_case)
         await uow.commit()

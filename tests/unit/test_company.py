@@ -58,7 +58,7 @@ class TestCompanyAggregate:
         assert company.cpf == "12345678901"
         assert company.cnpj == "12345678000190"
         assert company.active is True
-        assert company.deleted is False
+        assert company.is_deleted is False
 
     def test_create_aggregate_generates_unique_ids(self) -> None:
         """Verifica que cada chamada gera um ID diferente."""
@@ -201,7 +201,8 @@ class TestCompanyAggregate:
         company.delete()
 
         assert company._operation_type == OperationType.DELETE
-        assert company.deleted is True
+        assert company.is_deleted is True
+        assert company.deleted_at is not None
 
     def test_delete_emits_company_deleted_event(self) -> None:
         """Verifica que delete() emite o evento CompanyDeleted."""
@@ -229,6 +230,44 @@ class TestCompanyAggregate:
         company = _make_company()
 
         assert hash(company) == hash(company.id)
+
+    def test_create_sets_audit_fields(self) -> None:
+        """Verifica que create() preenche created_at e created_by."""
+        user_id = uuid7.create()
+        company = _make_company()
+        company.create(password="secret", user_id=user_id)
+
+        assert company.created_at is not None
+        assert company.created_by == user_id
+        assert company.updated_at is None
+        assert company.deleted_at is None
+
+    def test_update_sets_audit_fields(self) -> None:
+        """Verifica que update() preenche updated_at e updated_by."""
+        user_id = uuid7.create()
+        company = _make_company()
+        company.update(legal_name="Nova Acme", user_id=user_id)
+
+        assert company.updated_at is not None
+        assert company.updated_by == user_id
+        assert company.created_at is None
+
+    def test_delete_sets_audit_fields(self) -> None:
+        """Verifica que delete() preenche deleted_at e deleted_by."""
+        user_id = uuid7.create()
+        company = _make_company()
+        company.delete(user_id=user_id)
+
+        assert company.deleted_at is not None
+        assert company.deleted_by == user_id
+
+    def test_create_without_user_id_sets_timestamps(self) -> None:
+        """Verifica que create() sem user_id ainda preenche created_at."""
+        company = _make_company()
+        company.create(password="secret")
+
+        assert company.created_at is not None
+        assert company.created_by is None
 
 
 class TestCompanyCommands:
@@ -347,7 +386,6 @@ class TestCompanyEntity:
             cpf="12345678901",
             cnpj="12345678000190",
             active=True,
-            deleted=False,
         )
 
         assert entity.id == uid
@@ -358,7 +396,7 @@ class TestCompanyEntity:
         assert entity.cpf == "12345678901"
         assert entity.cnpj == "12345678000190"
         assert entity.active is True
-        assert entity.deleted is False
+        assert entity.deleted_at is None
 
     def test_company_entity_optional_fields(self) -> None:
         """Verifica que campos opcionais da entidade podem ser None."""
@@ -370,7 +408,6 @@ class TestCompanyEntity:
             email="contact@acme.com",
             cpf="12345678901",
             active=True,
-            deleted=False,
         )
 
         assert entity.trade_name is None
@@ -378,6 +415,8 @@ class TestCompanyEntity:
 
     def test_company_entity_is_frozen(self) -> None:
         """Verifica que a entidade Company é imutável (frozen dataclass)."""
+        from messagebus.entities import AuditReadBase
+
         uid = uuid7.create()
         entity = CompanyEntity(
             id=uid,
@@ -386,8 +425,11 @@ class TestCompanyEntity:
             email="contact@acme.com",
             cpf="12345678901",
             active=True,
-            deleted=False,
         )
+
+        assert isinstance(entity, AuditReadBase)
+        assert entity.created_at is None
+        assert entity.deleted_at is None
 
         import pytest
 
@@ -437,7 +479,6 @@ class TestCompanySchemas:
             email="contact@acme.com",
             cpf="12345678901",
             active=True,
-            deleted=False,
         )
 
         assert schema.id == uid

@@ -3,7 +3,7 @@
 from typing import cast
 from uuid import UUID
 
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 from services.dentist.adapters.repository.view_repo.patient import PatientViewRepo
 from services.dentist.domain.entities.patient import Patient
 from services.dentist.domains import DentistDomain

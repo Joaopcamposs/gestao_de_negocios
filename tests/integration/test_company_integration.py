@@ -15,7 +15,7 @@ from shared_core.domain.excecoes import (
     CompanyNotFound,
 )
 from shared_core.bootstrap import bootstrap
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 
 
 def _create_company_cmd(legal_name: str, **overrides) -> CreateCompany:
@@ -56,7 +56,7 @@ class TestCreateCompany:
 
         assert len(companies) == 1
         assert companies[0].legal_name == "Persisted Corp"
-        assert companies[0].deleted is False
+        assert companies[0].deleted_at is None
         assert isinstance(companies[0].id, UUID)
 
     async def test_create_company_persists_all_fields(self, engine) -> None:
@@ -165,7 +165,7 @@ class TestDeleteCompany:
 
         assert len(companies) == 1
         assert companies[0].legal_name == "Soft Deleted"
-        assert companies[0].deleted is True
+        assert companies[0].deleted_at is not None
 
     async def test_delete_nonexistent_company_raises_error(self, engine) -> None:
         """Verifica que excluir empresa inexistente lança exceção."""
@@ -202,7 +202,7 @@ class TestViewCompany:
         assert len(companies) == 1
         assert companies[0].id == company_id
         assert companies[0].legal_name == "Viewable Corp"
-        assert companies[0].deleted is False
+        assert companies[0].deleted_at is None
 
     async def test_view_nonexistent_company_returns_empty_list(self, engine) -> None:
         """Verifica que consultar empresa inexistente retorna lista vazia."""

@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from shared_core.entrypoints.schemas.base import ReadAuditSchema
+
 
 class CreateCompanySchema(BaseModel):
     """Schema para criação de empresa."""
@@ -29,7 +31,7 @@ class UpdateCompanySchema(BaseModel):
     new_active: bool | None = None
 
 
-class ReadCompanySchema(BaseModel):
+class ReadCompanySchema(ReadAuditSchema):
     """Schema de leitura de empresa."""
 
     id: UUID
@@ -40,4 +42,3 @@ class ReadCompanySchema(BaseModel):
     cpf: str
     cnpj: str | None = None
     active: bool
-    deleted: bool

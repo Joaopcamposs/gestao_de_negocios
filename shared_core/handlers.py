@@ -31,6 +31,11 @@ from shared_core.services.handlers.company import (
     delete_company,
     update_company,
 )
+from shared_core.services.handlers.audit_log import (
+    audit_entity_created,
+    audit_entity_deleted,
+    audit_entity_updated,
+)
 from shared_core.services.handlers.security import authenticate_user
 from shared_core.services.handlers.user import (
     create_public_user,
@@ -59,12 +64,12 @@ COMMAND_HANDLERS: CommandHandlers = CommandHandlers(
 
 EVENT_HANDLERS: EventHandlers = EventHandlers(
     {
-        CompanyCreated: [company_created],
-        CompanyUpdated: [company_updated],
-        CompanyDeleted: [company_deleted],
-        UserCreated: [user_created, create_public_user],
-        UserUpdated: [user_updated, update_public_user],
-        UserDeleted: [user_deleted, remove_public_user],
+        CompanyCreated: [company_created, audit_entity_created],
+        CompanyUpdated: [company_updated, audit_entity_updated],
+        CompanyDeleted: [company_deleted, audit_entity_deleted],
+        UserCreated: [user_created, create_public_user, audit_entity_created],
+        UserUpdated: [user_updated, update_public_user, audit_entity_updated],
+        UserDeleted: [user_deleted, remove_public_user, audit_entity_deleted],
         TimeToCreateInitialCompanyUser: [create_user],
         TimeToCreateCompanyAdminUser: [create_user],
     }

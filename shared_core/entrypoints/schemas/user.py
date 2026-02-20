@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from shared_core.entrypoints.schemas.base import ReadAuditSchema
+
 
 class CreateUserSchema(BaseModel):
     """Schema para criação de usuário."""
@@ -26,7 +28,7 @@ class UpdateUserSchema(BaseModel):
     new_admin: bool | None = None
 
 
-class ReadUserSchema(BaseModel):
+class ReadUserSchema(ReadAuditSchema):
     """Schema de leitura de usuário."""
 
     id: UUID
@@ -35,4 +37,3 @@ class ReadUserSchema(BaseModel):
     cpf: str
     active: bool
     admin: bool
-    deleted: bool

@@ -5,6 +5,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from shared_core.entrypoints.schemas.base import ReadAuditSchema
+
 
 class CreateLegalCaseSchema(BaseModel):
     """Schema para criação de processo jurídico."""
@@ -27,14 +29,13 @@ class UpdateLegalCaseSchema(BaseModel):
     new_notes: str | None = None
 
 
-class ReadLegalCaseSchema(BaseModel):
+class ReadLegalCaseSchema(ReadAuditSchema):
     """Schema de leitura de processo jurídico."""
 
     id: UUID
     company: UUID
     case_number: str
     client_name: str
-    deleted: bool
     description: str | None = None
     status: str = "open"
     open_date: date | None = None

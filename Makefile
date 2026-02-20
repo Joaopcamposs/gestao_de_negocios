@@ -1,4 +1,4 @@
-export COMPOSE_NAME=barramento_de_mensagens
+export COMPOSE_NAME=gestao_de_negocios
 export COMPOSE_TEST_NAME=$(COMPOSE_NAME)_test
 export INFRA=infra/applications
 
@@ -6,14 +6,15 @@ export INFRA=infra/applications
 ruff:
 	ruff format . && ruff check . --fix
 
-lint:
-	ruff format --check . && ruff check .
+lint: ruff
 
-typecheck:
+mypy:
 	mypy shared_core/ services/ infra/ messagebus/ libs/
 
+typecheck: mypy
+
 check: lint typecheck
-	@echo "✔ Lint e type-check passaram."
+	@echo "✔ Lint (ruff) e type-check (mypy) passaram."
 
 # ── Infra (Postgres compartilhado) ─────────────────────────────────
 infra-up:
@@ -62,43 +63,39 @@ deploy-all: deploy-dentist deploy-lawyer
 stop-all: stop-dentist stop-lawyer infra-down
 	@echo "✔ Todos os serviços e infra parados."
 
-# ── Dev local (sem Docker, requer postgres local) ─────────────────
-run-dentist:
-	uvicorn services.dentist.main:app --host 0.0.0.0 --port 8001 --reload
-
-run-lawyer:
-	uvicorn services.lawyer.main:app --host 0.0.0.0 --port 8002 --reload
+destroy-all: stop-all infra-destroy
+	@echo "✔ Todos os serviços e infra parados. Infra destruído."
 
 # ── Docker (testes) ───────────────────────────────────────────────
-test-db-up:
+test-env:
 	docker compose -f $(INFRA)/docker-compose.test.yml -p $(COMPOSE_TEST_NAME) up -d --wait
 
-test-db-down:
+test-env-down:
 	docker compose -f $(INFRA)/docker-compose.test.yml -p $(COMPOSE_TEST_NAME) down -v
 
 # ── Testes ────────────────────────────────────────────────────────
 test-unit:
 	python -m pytest tests/unit/ -v
 
-test-integration: test-db-up
+test-integration: test-env
 	python -m pytest tests/integration/ -v; \
-	$(MAKE) test-db-down
+	$(MAKE) test-env-down
 
-test-dentist: test-db-up
+test-dentist: test-env
 	python -m pytest tests/unit/test_services/test_dentist/ tests/integration/test_services/test_dentist/ -v; \
-	$(MAKE) test-db-down
+	$(MAKE) test-env-down
 
-test-lawyer: test-db-up
+test-lawyer: test-env
 	python -m pytest tests/unit/test_services/test_lawyer/ tests/integration/test_services/test_lawyer/ -v; \
-	$(MAKE) test-db-down
+	$(MAKE) test-env-down
 
-test-all: test-db-up
+test-all: test-env
 	python -m pytest tests/ -v; \
-	$(MAKE) test-db-down
+	$(MAKE) test-env-down
 
-test-cov: test-db-up
+test-cov: test-env
 	python -m pytest tests/ -v --cov=shared_core --cov=services --cov=infra --cov=messagebus --cov-report=term-missing; \
-	$(MAKE) test-db-down
+	$(MAKE) test-env-down
 
 # ── Limpeza ───────────────────────────────────────────────────────
 docker-clean:
@@ -131,13 +128,10 @@ help:
 	@echo "  make logs-lawyer       → Logs do Lawyer"
 	@echo "  make infra-logs        → Logs do Postgres"
 	@echo ""
-	@echo "  Dev local (sem Docker)"
-	@echo "  ──────────────────────────────────────────────────"
-	@echo "  make run-dentist       → Dentist na porta 8001"
-	@echo "  make run-lawyer        → Lawyer na porta 8002"
-	@echo ""
 	@echo "  Testes"
 	@echo "  ──────────────────────────────────────────────────"
+	@echo "  make test-env          → Iniciar ambiente de testes"
+	@echo "  make test-env-down     → Encerrar ambiente de testes"
 	@echo "  make test-unit         → Testes unitários"
 	@echo "  make test-integration  → Testes de integração"
 	@echo "  make test-dentist      → Testes do dentista"

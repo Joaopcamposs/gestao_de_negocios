@@ -39,7 +39,7 @@ class TestLegalCaseAggregate:
         assert lc.client_name == "João Silva"
         assert lc.company == _TEST_COMPANY_ID
         assert lc.id is not None
-        assert lc.deleted is False
+        assert lc.is_deleted is False
         assert lc.status == "open"
 
     def test_create_aggregate_with_all_fields(self) -> None:
@@ -102,12 +102,13 @@ class TestLegalCaseAggregate:
         assert lc.client_name == "Changed"
         assert lc.status == "open"
 
-    def test_delete_sets_deleted_true(self) -> None:
+    def test_delete_sets_deleted_at(self) -> None:
         lc = LegalCase.create_aggregate(
             company=_TEST_COMPANY_ID, case_number="001", client_name="Test"
         )
         lc.delete()
-        assert lc.deleted is True
+        assert lc.is_deleted is True
+        assert lc.deleted_at is not None
         assert lc.operation_type == OperationType.DELETE
 
     def test_delete_emits_event(self) -> None:
@@ -123,6 +124,40 @@ class TestLegalCaseAggregate:
             company=_TEST_COMPANY_ID, case_number="001", client_name="Test"
         )
         assert hash(lc) == hash(lc.id)
+
+    def test_create_sets_audit_fields(self) -> None:
+        """Verifica que create() preenche created_at e created_by."""
+        actor_id = uuid7.create()
+        lc = LegalCase.create_aggregate(
+            company=_TEST_COMPANY_ID, case_number="001", client_name="Test"
+        )
+        lc.create(user_id=actor_id)
+
+        assert lc.created_at is not None
+        assert lc.created_by == actor_id
+        assert lc.updated_at is None
+
+    def test_update_sets_audit_fields(self) -> None:
+        """Verifica que update() preenche updated_at e updated_by."""
+        actor_id = uuid7.create()
+        lc = LegalCase.create_aggregate(
+            company=_TEST_COMPANY_ID, case_number="001", client_name="Test"
+        )
+        lc.update(client_name="Cliente Novo", user_id=actor_id)
+
+        assert lc.updated_at is not None
+        assert lc.updated_by == actor_id
+
+    def test_delete_sets_audit_fields(self) -> None:
+        """Verifica que delete() preenche deleted_at e deleted_by."""
+        actor_id = uuid7.create()
+        lc = LegalCase.create_aggregate(
+            company=_TEST_COMPANY_ID, case_number="001", client_name="Test"
+        )
+        lc.delete(user_id=actor_id)
+
+        assert lc.deleted_at is not None
+        assert lc.deleted_by == actor_id
 
 
 class TestLegalCaseCommands:
@@ -173,15 +208,21 @@ class TestLegalCaseEntity:
     """Testes para a entidade de leitura LegalCase."""
 
     def test_entity_is_frozen(self) -> None:
+        """Verifica que a entidade LegalCase é imutável (frozen) e herda AuditReadBase."""
+        from messagebus.entities import AuditReadBase
+
         entity = LegalCaseEntity(
             id=uuid7.create(),
             company=_TEST_COMPANY_ID,
             case_number="001",
             client_name="Test",
-            deleted=False,
         )
+        assert isinstance(entity, AuditReadBase)
+        assert entity.created_at is None
+        assert entity.deleted_at is None
+
         with pytest.raises(AttributeError):
-            entity.client_name = "Changed"  # type: ignore[misc]
+            setattr(entity, "client_name", "Changed")
 
     def test_entity_with_optional_fields(self) -> None:
         entity = LegalCaseEntity(
@@ -189,7 +230,6 @@ class TestLegalCaseEntity:
             company=_TEST_COMPANY_ID,
             case_number="001",
             client_name="Test",
-            deleted=False,
         )
         assert entity.description is None
         assert entity.open_date is None

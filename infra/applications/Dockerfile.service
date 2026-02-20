@@ -1,7 +1,7 @@
 # ── Stage 1: Instala dependências (cacheable) ────────────────────────
 FROM python:3.11.9-slim AS deps
 
-WORKDIR /barramento_de_mensagens
+WORKDIR /gestao_de_negocios
 
 RUN pip install --no-cache-dir uv
 
@@ -14,10 +14,10 @@ RUN uv sync --no-dev --no-install-project
 # ── Stage 2: Imagem final leve ───────────────────────────────────────
 FROM python:3.11.9-slim
 
-WORKDIR /barramento_de_mensagens
+WORKDIR /gestao_de_negocios
 
 # Copia o venv com dependências já instaladas
-COPY --from=deps /barramento_de_mensagens/.venv .venv/
+COPY --from=deps /gestao_de_negocios/.venv .venv/
 
 # Copia código-fonte da aplicação
 COPY messagebus/ messagebus/
@@ -26,8 +26,8 @@ COPY services/ services/
 COPY infra/ infra/
 COPY libs/ libs/
 
-ENV PATH="/barramento_de_mensagens/.venv/bin:$PATH"
-ENV PYTHONPATH=/barramento_de_mensagens
+ENV PATH="/gestao_de_negocios/.venv/bin:$PATH"
+ENV PYTHONPATH=/gestao_de_negocios
 
 # Argumento para definir qual serviço subir
 ARG SERVICE_MODULE=services.dentist.main:app

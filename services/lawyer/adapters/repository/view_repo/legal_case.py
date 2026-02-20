@@ -32,7 +32,7 @@ class LegalCaseViewRepo(ViewRepository):
                 LegalCaseAggregate.company == company,
             )
             if not include_deleted:
-                query = query.where(LegalCaseAggregate.deleted == False)  # noqa: E712
+                query = query.where(LegalCaseAggregate.deleted_at.is_(None))
 
             result = (await session.execute(query)).scalar_one_or_none()
             if not result:
@@ -43,11 +43,17 @@ class LegalCaseViewRepo(ViewRepository):
                 company=result.company,
                 case_number=result.case_number,
                 client_name=result.client_name,
+                active=result.active,
                 description=result.description,
                 status=result.status,
                 open_date=result.open_date,
                 notes=result.notes,
-                deleted=result.deleted,
+                deleted_at=result.deleted_at,
+                deleted_by=result.deleted_by,
+                created_at=result.created_at,
+                created_by=result.created_by,
+                updated_at=result.updated_at,
+                updated_by=result.updated_by,
             )
 
     async def get_all(
@@ -68,7 +74,7 @@ class LegalCaseViewRepo(ViewRepository):
                 LegalCaseAggregate.company == company,
             )
             if not include_deleted:
-                query = query.where(LegalCaseAggregate.deleted == False)  # noqa: E712
+                query = query.where(LegalCaseAggregate.deleted_at.is_(None))
 
             results = (await session.execute(query)).scalars()
             if not results:
@@ -80,11 +86,17 @@ class LegalCaseViewRepo(ViewRepository):
                     company=r.company,
                     case_number=r.case_number,
                     client_name=r.client_name,
+                    active=r.active,
                     description=r.description,
                     status=r.status,
                     open_date=r.open_date,
                     notes=r.notes,
-                    deleted=r.deleted,
+                    deleted_at=r.deleted_at,
+                    deleted_by=r.deleted_by,
+                    created_at=r.created_at,
+                    created_by=r.created_by,
+                    updated_at=r.updated_at,
+                    updated_by=r.updated_by,
                 )
                 for r in results
             ]

@@ -18,7 +18,7 @@ from shared_core.entrypoints.schemas.company import (
 from shared_core.services.handlers.security import current_user, get_current_user
 from shared_core.bootstrap import bootstrap
 from shared_core.consts import SERVICE_TYPE
-from infra.database.unit_of_work import UnitOfWork
+from messagebus.unity_of_work import UnitOfWork
 
 router = APIRouter(
     prefix="/v1", tags=["Companies"], dependencies=[Depends(get_current_user)]
