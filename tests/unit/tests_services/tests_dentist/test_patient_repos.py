@@ -2,6 +2,7 @@
 
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 import uuid7
 
 import services.dentist.adapters.orm.patient  # noqa: F401 — inicializa o mapeamento ORM
@@ -244,3 +245,64 @@ class TestPatientDomainRepoAddRemove:
         repo = PatientDomainRepo(session=session)
         with pytest.raises(PatientNotFound):
             await repo.get_by_cpf("99999999999", _COMPANY_ID)
+
+
+class TestAbstractPatientDomainRepoNotImplemented:
+    """Testes para cobertura dos raise NotImplementedError em AbstractPatientDomainRepo."""
+
+    async def test_add_raises(self) -> None:
+        """Cobre o raise NotImplementedError do _add abstrato."""
+        from services.dentist.adapters.repository.domain_repo.patient import (
+            AbstractPatientDomainRepo,
+        )
+
+        class Stub(AbstractPatientDomainRepo):
+            async def _add(self, patient):
+                await super()._add(patient)
+
+            async def _remove(self, patient):
+                pass
+
+            async def get_by_cpf(self, cpf, company):
+                pass
+
+        with pytest.raises(NotImplementedError):
+            await Stub()._add(MagicMock())
+
+    async def test_remove_raises(self) -> None:
+        """Cobre o raise NotImplementedError do _remove abstrato."""
+        from services.dentist.adapters.repository.domain_repo.patient import (
+            AbstractPatientDomainRepo,
+        )
+
+        class Stub(AbstractPatientDomainRepo):
+            async def _add(self, patient):
+                pass
+
+            async def _remove(self, patient):
+                await super()._remove(patient)
+
+            async def get_by_cpf(self, cpf, company):
+                pass
+
+        with pytest.raises(NotImplementedError):
+            await Stub()._remove(MagicMock())
+
+    async def test_get_by_cpf_raises(self) -> None:
+        """Cobre o raise NotImplementedError do get_by_cpf abstrato."""
+        from services.dentist.adapters.repository.domain_repo.patient import (
+            AbstractPatientDomainRepo,
+        )
+
+        class Stub(AbstractPatientDomainRepo):
+            async def _add(self, patient):
+                pass
+
+            async def _remove(self, patient):
+                pass
+
+            async def get_by_cpf(self, cpf, company):
+                return await super().get_by_cpf(cpf, company)
+
+        with pytest.raises(NotImplementedError):
+            await Stub().get_by_cpf("123", _COMPANY_ID)

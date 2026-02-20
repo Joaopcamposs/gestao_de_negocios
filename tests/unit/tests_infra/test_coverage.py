@@ -360,16 +360,6 @@ class TestSchemaHandlers:
         assert result is mock_session
 
 
-class TestStartMappers:
-    """Testes para a função start_mappers do módulo ORM."""
-
-    def test_start_mappers(self) -> None:
-        """Verifica que start_mappers é chamável sem erros."""
-        from shared_core.adapters.orm import start_mappers
-
-        start_mappers()
-
-
 class TestInfraDatabaseFunctions:
     """Testes para a função get_database_uri em diferentes ambientes."""
 

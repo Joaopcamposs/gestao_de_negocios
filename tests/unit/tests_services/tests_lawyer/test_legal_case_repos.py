@@ -2,6 +2,7 @@
 
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 import uuid7
 
 import services.lawyer.adapters.orm.legal_case  # noqa: F401 — inicializa o mapeamento ORM
@@ -248,3 +249,64 @@ class TestLegalCaseDomainRepoAddRemove:
         repo = LegalCaseDomainRepo(session=session)
         with pytest.raises(LegalCaseNotFound):
             await repo.get_by_case_number("9999", _COMPANY_ID)
+
+
+class TestAbstractLegalCaseDomainRepoNotImplemented:
+    """Testes para cobertura dos raise NotImplementedError em AbstractLegalCaseDomainRepo."""
+
+    async def test_add_raises(self) -> None:
+        """Cobre o raise NotImplementedError do _add abstrato."""
+        from services.lawyer.adapters.repository.domain_repo.legal_case import (
+            AbstractLegalCaseDomainRepo,
+        )
+
+        class Stub(AbstractLegalCaseDomainRepo):
+            async def _add(self, case):
+                await super()._add(case)
+
+            async def _remove(self, case):
+                pass
+
+            async def get_by_case_number(self, company, case_number):
+                pass
+
+        with pytest.raises(NotImplementedError):
+            await Stub()._add(MagicMock())
+
+    async def test_remove_raises(self) -> None:
+        """Cobre o raise NotImplementedError do _remove abstrato."""
+        from services.lawyer.adapters.repository.domain_repo.legal_case import (
+            AbstractLegalCaseDomainRepo,
+        )
+
+        class Stub(AbstractLegalCaseDomainRepo):
+            async def _add(self, case):
+                pass
+
+            async def _remove(self, case):
+                await super()._remove(case)
+
+            async def get_by_case_number(self, company, case_number):
+                pass
+
+        with pytest.raises(NotImplementedError):
+            await Stub()._remove(MagicMock())
+
+    async def test_get_by_case_number_raises(self) -> None:
+        """Cobre o raise NotImplementedError do get_by_case_number abstrato."""
+        from services.lawyer.adapters.repository.domain_repo.legal_case import (
+            AbstractLegalCaseDomainRepo,
+        )
+
+        class Stub(AbstractLegalCaseDomainRepo):
+            async def _add(self, case):
+                pass
+
+            async def _remove(self, case):
+                pass
+
+            async def get_by_case_number(self, company, case_number):
+                return await super().get_by_case_number(company, case_number)
+
+        with pytest.raises(NotImplementedError):
+            await Stub().get_by_case_number(_COMPANY_ID, "0001")
