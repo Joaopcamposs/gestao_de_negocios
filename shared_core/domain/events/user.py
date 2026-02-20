@@ -43,6 +43,7 @@ class TimeToCreateInitialCompanyUser(Event):
     password: str
     active: bool
     admin: bool
+    phone: str = ""
     is_owner: bool = True
 
 
@@ -57,4 +58,5 @@ class TimeToCreateCompanyAdminUser(Event):
     password: str = FIRST_USER_PASSWORD
     active: bool = True
     admin: bool = True
+    phone: str = ""
     is_owner: bool = False

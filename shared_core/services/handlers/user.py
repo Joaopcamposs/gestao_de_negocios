@@ -32,6 +32,16 @@ async def create_user(
     uow: UnitOfWork,
 ) -> UUID:
     """Handler para criação de usuário."""
+    from shared_core.domain.value_objects.address import Address
+
+    address = (
+        command_or_event.address
+        if isinstance(command_or_event, CreateUser)
+        else Address(
+            street="", number="", zip_code="", district="", city="", state="", country=""
+        )
+    )
+
     async with uow(Domain.user) as uow:
         domain_repo: UserDomainRepo = cast(UserDomainRepo, uow.domain_repo)
 
@@ -40,10 +50,12 @@ async def create_user(
             email=command_or_event.email,
             cpf=command_or_event.cpf,
             password=command_or_event.password,
+            name=command_or_event.name,
+            phone=command_or_event.phone,
+            address=address,
             active=command_or_event.active,
             admin=command_or_event.admin,
-            is_owner=getattr(command_or_event, "is_owner", False),
-            name=getattr(command_or_event, "name", None),
+            is_owner=command_or_event.is_owner,
         )
         user.create(user_id=uow.user_id)
 
@@ -58,22 +70,16 @@ async def update_user(command: UpdateUser, uow: UnitOfWork) -> None:
     async with uow(Domain.user) as uow:
         domain_repo: UserDomainRepo = cast(UserDomainRepo, uow.domain_repo)
 
-        user = await domain_repo.get_by_email(
-            email=command.email,
-        )
+        user = await domain_repo.get_by_email(email=command.email)
         user.update(
             email=command.new_email,
             password=command.new_password,
             active=command.new_active,
             admin=command.new_admin,
             name=command.new_name,
-            street=command.new_street,
-            number=command.new_number,
-            zip_code=command.new_zip_code,
-            district=command.new_district,
-            city=command.new_city,
-            state=command.new_state,
-            country=command.new_country,
+            phone=command.new_phone,
+            birth_date=command.new_birth_date,
+            address=command.new_address,
             user_id=uow.user_id,
         )
 

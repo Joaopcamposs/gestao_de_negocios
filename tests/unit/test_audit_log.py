@@ -10,6 +10,7 @@ from messagebus.entities import AuditableEvent
 from messagebus.messagebus import Event
 from shared_core.domain.aggregate.audit_log import AuditLog
 from shared_core.domain.entities.audit_log import AuditLog as AuditLogRead
+from shared_core.domain.value_objects.address import Address
 from shared_core.domain.value_objects.enums import (
     AuditConstant,
     AuditOperation,
@@ -18,6 +19,15 @@ from shared_core.domain.value_objects.enums import (
 
 _TEST_COMPANY_ID = uuid7.create()
 _TEST_USER_ID = uuid7.create()
+_TEST_ADDRESS = Address(
+    street="Rua das Flores",
+    number="123",
+    zip_code="01310100",
+    district="Bela Vista",
+    city="São Paulo",
+    state="SP",
+    country="Brasil",
+)
 
 
 class TestAuditableEvent:
@@ -315,6 +325,9 @@ class TestUserAuditData:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
             active=True,
             admin=False,
         )
@@ -342,6 +355,9 @@ class TestUserAuditData:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user.update(email="new@example.com", active=False)
 
@@ -365,6 +381,9 @@ class TestUserAuditData:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user.update(password="newpassword")
 
@@ -382,6 +401,9 @@ class TestUserAuditData:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
             admin=True,
         )
         user.delete()
@@ -1117,6 +1139,9 @@ class TestAggregateInheritsAuditBase:
             email="test@example.com",
             cpf="12345678901",
             password="secret",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
 
         assert isinstance(user, AuditBase)
@@ -1132,6 +1157,9 @@ class TestAggregateInheritsAuditBase:
             email="test@example.com",
             cpf="12345678901",
             password="secret",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user.delete()
 
@@ -1150,6 +1178,9 @@ class TestAggregateInheritsAuditBase:
             email="test@example.com",
             cpf="12345678901",
             password="secret",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         public = PublicUser.create_registration_aggregate(user=user)
 
@@ -1166,6 +1197,9 @@ class TestAggregateInheritsAuditBase:
             email="test@example.com",
             cpf="12345678901",
             password="secret",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         public = PublicUser.create_registration_aggregate(user=user)
         public.remove()
@@ -1337,6 +1371,15 @@ class TestAggregateInheritsAuditBase:
             company=uuid7.create(),
             email="a@b.com",
             cpf="12345678901",
+            name="Test User",
+            phone="11999999999",
+            street="Rua X",
+            number="1",
+            zip_code="01310100",
+            district="Centro",
+            city="SP",
+            state="SP",
+            country="Brasil",
             active=True,
             admin=False,
         )
@@ -1377,6 +1420,15 @@ class TestAggregateInheritsAuditBase:
             company=uuid7.create(),
             email="a@b.com",
             cpf="12345678901",
+            name="Test User",
+            phone="11999999999",
+            street="Rua X",
+            number="1",
+            zip_code="01310100",
+            district="Centro",
+            city="SP",
+            state="SP",
+            country="Brasil",
             active=True,
             admin=False,
         )

@@ -9,6 +9,17 @@ from shared_core.domain.commands.company import CreateCompany
 from shared_core.domain.commands.credit_card import CreateCreditCard, DeleteCreditCard
 from shared_core.domain.commands.user import CreateUser
 from shared_core.domain.excecoes import CreditCardNotFound
+from shared_core.domain.value_objects.address import Address
+
+_TEST_ADDRESS = Address(
+    street="Rua das Flores",
+    number="123",
+    zip_code="01310100",
+    district="Bela Vista",
+    city="São Paulo",
+    state="SP",
+    country="Brasil",
+)
 
 
 async def _create_company(legal_name: str, email: str, cpf: str = "12345678901") -> UUID:
@@ -36,6 +47,9 @@ async def _create_user(company_id: UUID, email: str, cpf: str) -> UUID:
             email=email,
             cpf=cpf,
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
             active=True,
             admin=False,
         )

@@ -1,9 +1,11 @@
 """Módulo de comandos do domínio User."""
 
 from dataclasses import dataclass
+from datetime import date
 from uuid import UUID
 
 from messagebus.messagebus import Command
+from shared_core.domain.value_objects.address import Address
 
 
 @dataclass
@@ -14,10 +16,13 @@ class CreateUser(Command):
     email: str
     cpf: str
     password: str
+    name: str
+    phone: str
+    address: Address
     active: bool = True
     admin: bool = False
     is_owner: bool = False
-    name: str | None = None
+    birth_date: date | None = None
 
 
 @dataclass
@@ -30,13 +35,9 @@ class UpdateUser(Command):
     new_active: bool | None = None
     new_admin: bool | None = None
     new_name: str | None = None
-    new_street: str | None = None
-    new_number: str | None = None
-    new_zip_code: str | None = None
-    new_district: str | None = None
-    new_city: str | None = None
-    new_state: str | None = None
-    new_country: str | None = None
+    new_phone: str | None = None
+    new_birth_date: date | None = None
+    new_address: Address | None = None
 
 
 @dataclass

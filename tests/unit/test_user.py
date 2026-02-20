@@ -5,9 +5,19 @@ from uuid import UUID
 import uuid7
 
 from messagebus.entities import Aggregate, OperationType
+from shared_core.domain.value_objects.address import Address
 from shared_core.security import UserSecurity
 
 _TEST_COMPANY_ID = uuid7.create()
+_TEST_ADDRESS = Address(
+    street="Rua das Flores",
+    number="123",
+    zip_code="01310100",
+    district="Bela Vista",
+    city="São Paulo",
+    state="SP",
+    country="Brasil",
+)
 from shared_core.domain.aggregate.user import PublicUser, User
 from shared_core.domain.commands.security import AuthenticateUser
 from shared_core.domain.commands.user import (
@@ -50,6 +60,9 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
 
         assert isinstance(user.id, UUID)
@@ -70,12 +83,18 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user2 = User.create_aggregate(
             company=company_id,
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
 
         assert user1.id != user2.id
@@ -87,6 +106,9 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
 
         assert isinstance(user, Aggregate)
@@ -98,6 +120,9 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user.create()
 
@@ -111,6 +136,9 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user.create()
 
@@ -127,6 +155,9 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user.update(email="new@example.com")
 
@@ -139,6 +170,9 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user.update(email="new@example.com")
 
@@ -151,6 +185,9 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user.update(password="newpassword")
 
@@ -163,6 +200,9 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
             active=True,
         )
         user.update(active=False)
@@ -176,6 +216,9 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
             admin=False,
         )
         user.update(admin=True)
@@ -189,6 +232,9 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         original_password = user.password_hash
         user.update(email=None, password=None, active=None, admin=None)
@@ -206,6 +252,9 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user.update(email="new@example.com")
 
@@ -222,6 +271,9 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user.delete()
 
@@ -237,6 +289,9 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user.delete()
 
@@ -253,6 +308,9 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user.create()
         user.update(email="new@example.com")
@@ -269,6 +327,9 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user.create(user_id=actor_id)
 
@@ -284,6 +345,9 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user.update(email="new@example.com", user_id=actor_id)
 
@@ -298,6 +362,9 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user.delete(user_id=actor_id)
 
@@ -311,6 +378,9 @@ class TestUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
 
         assert hash(user) == hash(user.id)
@@ -322,6 +392,9 @@ class TestUserAggregate:
             email="admin@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Admin User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
             active=False,
             admin=True,
         )
@@ -340,6 +413,9 @@ class TestUserCommands:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
 
         assert command.company == _TEST_COMPANY_ID
@@ -356,6 +432,9 @@ class TestUserCommands:
             email="admin@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Admin User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
             active=False,
             admin=True,
         )
@@ -473,6 +552,15 @@ class TestUserEntity:
             company=company_id,
             email="test@example.com",
             cpf="12345678901",
+            name="Test User",
+            phone="11999999999",
+            street="Rua X",
+            number="1",
+            zip_code="01310100",
+            district="Centro",
+            city="SP",
+            state="SP",
+            country="Brasil",
             active=True,
             admin=False,
         )
@@ -492,6 +580,15 @@ class TestUserEntity:
             company=uuid7.create(),
             email="test@example.com",
             cpf="12345678901",
+            name="Test User",
+            phone="11999999999",
+            street="Rua X",
+            number="1",
+            zip_code="01310100",
+            district="Centro",
+            city="SP",
+            state="SP",
+            country="Brasil",
             active=True,
             admin=False,
         )
@@ -504,10 +601,23 @@ class TestUserSchemas:
 
     def test_create_user_schema(self) -> None:
         """Verifica o schema de criação de usuário."""
+        from shared_core.entrypoints.schemas.user import AddressSchema
+
         schema = CreateUserSchema(
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=AddressSchema(
+                street="Rua X",
+                number="1",
+                zip_code="01310100",
+                district="Centro",
+                city="SP",
+                state="SP",
+                country="Brasil",
+            ),
             active=True,
             admin=False,
         )
@@ -552,6 +662,15 @@ class TestUserSchemas:
             company=company_id,
             email="test@example.com",
             cpf="12345678901",
+            name="Test User",
+            phone="11999999999",
+            street="Rua X",
+            number="1",
+            zip_code="01310100",
+            district="Centro",
+            city="SP",
+            state="SP",
+            country="Brasil",
             active=True,
             admin=False,
         )
@@ -576,6 +695,9 @@ class TestUserAggregateBelongsToCompany:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
 
         assert user.company == company_id
@@ -588,6 +710,9 @@ class TestUserAggregateBelongsToCompany:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user.create()
 
@@ -601,10 +726,22 @@ class TestUserAggregateBelongsToCompany:
         company_b = uuid7.create()
 
         user_a = User.create_aggregate(
-            company=company_a, email="a@example.com", cpf="12345678901", password="pwd"
+            company=company_a,
+            email="a@example.com",
+            cpf="12345678901",
+            password="pwd",
+            name="User A",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user_b = User.create_aggregate(
-            company=company_b, email="b@example.com", cpf="12345678902", password="pwd"
+            company=company_b,
+            email="b@example.com",
+            cpf="12345678902",
+            password="pwd",
+            name="User B",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
         user_a.create()
         user_b.create()
@@ -625,6 +762,9 @@ class TestPublicUserAggregate:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
 
     def test_create_registration_aggregate_returns_public_user(self) -> None:
@@ -940,7 +1080,7 @@ class TestDomainExceptions:
 
 
 class TestUserNewFields:
-    """Testes para os novos campos do agregado User (is_owner, name, endereço)."""
+    """Testes para os novos campos do agregado User (is_owner, name, phone, address, birth_date)."""
 
     def test_user_is_owner_defaults_to_false(self) -> None:
         """Verifica que is_owner é False por padrão."""
@@ -949,6 +1089,9 @@ class TestUserNewFields:
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
 
         assert user.is_owner is False
@@ -960,74 +1103,132 @@ class TestUserNewFields:
             email="owner@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Owner",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
             is_owner=True,
         )
 
         assert user.is_owner is True
 
-    def test_user_name_defaults_to_none(self) -> None:
-        """Verifica que name é None por padrão."""
-        user = User.create_aggregate(
-            company=uuid7.create(),
-            email="test@example.com",
-            cpf="12345678901",
-            password="secret123",
-        )
-
-        assert user.name is None
-
-    def test_user_name_can_be_set(self) -> None:
-        """Verifica que name pode ser definido."""
+    def test_user_name_is_stored(self) -> None:
+        """Verifica que name é armazenado corretamente."""
         user = User.create_aggregate(
             company=uuid7.create(),
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
             name="João Silva",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
 
         assert user.name == "João Silva"
 
-    def test_user_address_fields_default_to_none(self) -> None:
-        """Verifica que todos os campos de endereço são None por padrão."""
+    def test_user_phone_is_stored(self) -> None:
+        """Verifica que phone é armazenado corretamente."""
         user = User.create_aggregate(
             company=uuid7.create(),
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11988887777",
+            address=_TEST_ADDRESS,
         )
 
-        assert user.street is None
-        assert user.number is None
-        assert user.zip_code is None
-        assert user.district is None
-        assert user.city is None
-        assert user.state is None
-        assert user.country is None
+        assert user.phone == "11988887777"
 
-    def test_user_address_fields_can_be_set(self) -> None:
-        """Verifica que campos de endereço podem ser definidos."""
+    def test_user_address_property_returns_address_value_object(self) -> None:
+        """Verifica que address property retorna um Address value object."""
+        from shared_core.domain.value_objects.address import Address
+
         user = User.create_aggregate(
             company=uuid7.create(),
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
-            street="Rua das Flores",
-            number="123",
-            zip_code="01310-100",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
+        )
+
+        assert isinstance(user.address, Address)
+        assert user.address.street == _TEST_ADDRESS.street
+        assert user.address.city == _TEST_ADDRESS.city
+
+    def test_user_complement_defaults_to_none(self) -> None:
+        """Verifica que complement é None por padrão."""
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="test@example.com",
+            cpf="12345678901",
+            password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
+        )
+
+        assert user.complement is None
+
+    def test_user_complement_can_be_set(self) -> None:
+        """Verifica que complement pode ser definido no endereço."""
+        from shared_core.domain.value_objects.address import Address
+
+        addr = Address(
+            street="Av. Paulista",
+            number="1000",
+            zip_code="01310100",
             district="Bela Vista",
             city="São Paulo",
             state="SP",
             country="Brasil",
+            complement="Apto 42",
+        )
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="test@example.com",
+            cpf="12345678901",
+            password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=addr,
         )
 
-        assert user.street == "Rua das Flores"
-        assert user.number == "123"
-        assert user.zip_code == "01310-100"
-        assert user.district == "Bela Vista"
-        assert user.city == "São Paulo"
-        assert user.state == "SP"
-        assert user.country == "Brasil"
+        assert user.complement == "Apto 42"
+        assert user.address.complement == "Apto 42"
+
+    def test_user_birth_date_defaults_to_none(self) -> None:
+        """Verifica que birth_date é None por padrão."""
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="test@example.com",
+            cpf="12345678901",
+            password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
+        )
+
+        assert user.birth_date is None
+
+    def test_user_birth_date_can_be_set(self) -> None:
+        """Verifica que birth_date pode ser definido."""
+        from datetime import date
+
+        bd = date(1990, 5, 15)
+        user = User.create_aggregate(
+            company=uuid7.create(),
+            email="test@example.com",
+            cpf="12345678901",
+            password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
+            birth_date=bd,
+        )
+
+        assert user.birth_date == bd
 
     def test_user_update_preserves_is_owner(self) -> None:
         """Verifica que update() preserva is_owner quando não informado."""
@@ -1036,6 +1237,9 @@ class TestUserNewFields:
             email="owner@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Owner",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
             is_owner=True,
         )
         user.update(email="newemail@example.com")
@@ -1049,22 +1253,40 @@ class TestUserNewFields:
             email="owner@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Owner",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
             is_owner=False,
         )
         user.update(is_owner=True)
 
         assert user.is_owner is True
 
-    def test_user_update_can_change_name_and_address(self) -> None:
-        """Verifica que update() pode alterar name e campos de endereço."""
+    def test_user_update_can_change_address(self) -> None:
+        """Verifica que update() substitui o endereço via Address value object."""
+        from shared_core.domain.value_objects.address import Address
+
         user = User.create_aggregate(
             company=uuid7.create(),
             email="test@example.com",
             cpf="12345678901",
             password="secret123",
+            name="Test User",
+            phone="11999999999",
+            address=_TEST_ADDRESS,
         )
-        user.update(name="Maria Souza", city="Rio de Janeiro", state="RJ")
+        new_address = Address(
+            street="Rua Nova",
+            number="999",
+            zip_code="20040020",
+            district="Centro",
+            city="Rio de Janeiro",
+            state="RJ",
+            country="Brasil",
+        )
+        user.update(address=new_address)
 
-        assert user.name == "Maria Souza"
+        assert user.street == "Rua Nova"
         assert user.city == "Rio de Janeiro"
         assert user.state == "RJ"
+        assert user.address.city == "Rio de Janeiro"

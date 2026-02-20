@@ -12,6 +12,17 @@ from shared_core.domain.commands.user import (
     DeleteUser,
     UpdateUser,
 )
+from shared_core.domain.value_objects.address import Address
+
+_TEST_ADDRESS = Address(
+    street="Rua das Flores",
+    number="123",
+    zip_code="01310100",
+    district="Bela Vista",
+    city="São Paulo",
+    state="SP",
+    country="Brasil",
+)
 from shared_core.domain.excecoes import (
     UserAlreadyRegistered,
     UserNotFound,
@@ -43,6 +54,9 @@ def _create_user_cmd(company_id: UUID, email: str, **overrides) -> CreateUser:
         email=email,
         cpf="12345678901",
         password="secret123",
+        name="Test User",
+        phone="11999999999",
+        address=_TEST_ADDRESS,
         active=True,
         admin=False,
     )

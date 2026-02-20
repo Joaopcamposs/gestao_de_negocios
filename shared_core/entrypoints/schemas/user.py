@@ -1,10 +1,39 @@
 """Módulo de schemas de entrada/saída para User."""
 
+from datetime import date
 from uuid import UUID
 
 from pydantic import BaseModel
 
 from shared_core.entrypoints.schemas.base import ReadAuditSchema
+
+
+class AddressSchema(BaseModel):
+    """Schema para representação de endereço."""
+
+    street: str
+    number: str
+    zip_code: str
+    district: str
+    city: str
+    state: str
+    country: str
+    complement: str | None = None
+
+    def to_value_object(self):
+        """Converte para o value object Address do domínio."""
+        from shared_core.domain.value_objects.address import Address
+
+        return Address(
+            street=self.street,
+            number=self.number,
+            zip_code=self.zip_code,
+            district=self.district,
+            city=self.city,
+            state=self.state,
+            country=self.country,
+            complement=self.complement,
+        )
 
 
 class CreateUserSchema(BaseModel):
@@ -13,9 +42,12 @@ class CreateUserSchema(BaseModel):
     email: str
     password: str
     cpf: str
-    active: bool
-    admin: bool
-    name: str | None = None
+    name: str
+    phone: str
+    address: AddressSchema
+    active: bool = True
+    admin: bool = False
+    birth_date: date | None = None
 
 
 class UpdateUserSchema(BaseModel):
@@ -24,17 +56,25 @@ class UpdateUserSchema(BaseModel):
     email: str
     new_email: str | None = None
     new_password: str | None = None
-    new_cpf: str | None = None
     new_active: bool | None = None
     new_admin: bool | None = None
     new_name: str | None = None
-    new_street: str | None = None
-    new_number: str | None = None
-    new_zip_code: str | None = None
-    new_district: str | None = None
-    new_city: str | None = None
-    new_state: str | None = None
-    new_country: str | None = None
+    new_phone: str | None = None
+    new_birth_date: date | None = None
+    new_address: AddressSchema | None = None
+
+
+class ReadAddressSchema(BaseModel):
+    """Schema de leitura de endereço."""
+
+    street: str
+    number: str
+    zip_code: str
+    district: str
+    city: str
+    state: str
+    country: str
+    complement: str | None = None
 
 
 class ReadUserSchema(ReadAuditSchema):
@@ -44,14 +84,17 @@ class ReadUserSchema(ReadAuditSchema):
     company: UUID
     email: str
     cpf: str
+    name: str
+    phone: str
+    street: str
+    number: str
+    zip_code: str
+    district: str
+    city: str
+    state: str
+    country: str
     active: bool
     admin: bool
+    complement: str | None = None
     is_owner: bool = False
-    name: str | None = None
-    street: str | None = None
-    number: str | None = None
-    zip_code: str | None = None
-    district: str | None = None
-    city: str | None = None
-    state: str | None = None
-    country: str | None = None
+    birth_date: date | None = None

@@ -1,10 +1,12 @@
 """Módulo do agregado User."""
 
 from dataclasses import dataclass
+from datetime import date
 from uuid import UUID
 
 import uuid7
 
+from shared_core.domain.value_objects.address import Address
 from shared_core.domain.value_objects.enums import AuditConstant, EntityType
 from shared_core.domain.events.user import (
     UserCreated,
@@ -17,25 +19,52 @@ from shared_core.security import UserSecurity
 
 @dataclass(kw_only=True)
 class User(Aggregate, UserSecurity):
-    """Agregado que representa um usuário no domínio."""
+    """
+    Agregado que representa um usuário no domínio.
+
+    Os campos de endereço são armazenados de forma plana para compatibilidade
+    com o mapeamento ORM. O endereço é exposto como value object via propriedade.
+    """
 
     id: UUID
     company: UUID
     email: str
     cpf: str
+    name: str
+    phone: str
+    street: str
+    number: str
+    zip_code: str
+    district: str
+    city: str
+    state: str
+    country: str
     admin: bool
+    complement: str | None = None
     is_owner: bool = False
-    name: str | None = None
-    street: str | None = None
-    number: str | None = None
-    zip_code: str | None = None
-    district: str | None = None
-    city: str | None = None
-    state: str | None = None
-    country: str | None = None
+    birth_date: date | None = None
 
     def __hash__(self) -> int:
         return hash(self.id)
+
+    @property
+    def address(self) -> Address:
+        """
+        Retorna o endereço do usuário como value object imutável.
+
+        Returns:
+            Instância de Address construída a partir dos campos planos.
+        """
+        return Address(
+            street=self.street,
+            number=self.number,
+            zip_code=self.zip_code,
+            district=self.district,
+            city=self.city,
+            state=self.state,
+            country=self.country,
+            complement=self.complement,
+        )
 
     @staticmethod
     def create_aggregate(
@@ -43,17 +72,13 @@ class User(Aggregate, UserSecurity):
         email: str,
         cpf: str,
         password: str,
+        name: str,
+        phone: str,
+        address: Address,
         active: bool = True,
         admin: bool = False,
         is_owner: bool = False,
-        name: str | None = None,
-        street: str | None = None,
-        number: str | None = None,
-        zip_code: str | None = None,
-        district: str | None = None,
-        city: str | None = None,
-        state: str | None = None,
-        country: str | None = None,
+        birth_date: date | None = None,
     ) -> "User":
         """
         Cria uma nova instância do agregado User.
@@ -63,40 +88,37 @@ class User(Aggregate, UserSecurity):
             email: Email do usuário.
             cpf: CPF do usuário.
             password: Senha do usuário.
+            name: Nome completo do usuário.
+            phone: Telefone de contato do usuário.
+            address: Endereço completo do usuário como value object.
             active: Se o usuário está ativo.
             admin: Se o usuário é administrador.
             is_owner: Se o usuário é o proprietário da empresa.
-            name: Nome completo do usuário (opcional).
-            street: Logradouro do endereço (opcional).
-            number: Número do endereço (opcional).
-            zip_code: CEP do endereço (opcional).
-            district: Bairro do endereço (opcional).
-            city: Cidade do endereço (opcional).
-            state: Estado do endereço (opcional).
-            country: País do endereço (opcional).
+            birth_date: Data de nascimento (opcional).
 
         Returns:
             Nova instância de User com ID gerado.
         """
-        hash_password = UserSecurity.encrypt_password(password)
-
         return User(
             id=uuid7.create(),
             company=company,
             email=email,
             cpf=cpf,
-            _password_hash=hash_password,
+            _password_hash=UserSecurity.encrypt_password(password),
+            name=name,
+            phone=phone,
+            street=address.street,
+            number=address.number,
+            zip_code=address.zip_code,
+            district=address.district,
+            city=address.city,
+            state=address.state,
+            country=address.country,
+            complement=address.complement,
             active=active,
             admin=admin,
             is_owner=is_owner,
-            name=name,
-            street=street,
-            number=number,
-            zip_code=zip_code,
-            district=district,
-            city=city,
-            state=state,
-            country=country,
+            birth_date=birth_date,
         )
 
     def create(self, user_id: UUID | None = None) -> None:
@@ -104,20 +126,19 @@ class User(Aggregate, UserSecurity):
         self._operation_type = OperationType.INSERT
         self._set_create_audit(user_id)
 
-        new_data = {
-            "email": self.email,
-            "cpf": self.cpf,
-            "active": self.active,
-            "admin": self.admin,
-            "is_owner": self.is_owner,
-        }
-
         self.add_event(
             UserCreated(
                 id=self.id,
                 company=self.company,
                 entity_type=EntityType.USER,
-                new_data=new_data,
+                new_data={
+                    "email": self.email,
+                    "cpf": self.cpf,
+                    "name": self.name,
+                    "active": self.active,
+                    "admin": self.admin,
+                    "is_owner": self.is_owner,
+                },
             )
         )
 
@@ -129,17 +150,15 @@ class User(Aggregate, UserSecurity):
         admin: bool | None = None,
         is_owner: bool | None = None,
         name: str | None = None,
-        street: str | None = None,
-        number: str | None = None,
-        zip_code: str | None = None,
-        district: str | None = None,
-        city: str | None = None,
-        state: str | None = None,
-        country: str | None = None,
+        phone: str | None = None,
+        birth_date: date | None = None,
+        address: Address | None = None,
         user_id: UUID | None = None,
     ) -> None:
         """
         Atualiza os dados do usuário e emite evento de atualização.
+
+        Ao passar um novo endereço, todos os campos de endereço são substituídos.
 
         Args:
             email: Novo email (opcional).
@@ -148,13 +167,9 @@ class User(Aggregate, UserSecurity):
             admin: Novo status de administrador (opcional).
             is_owner: Novo status de proprietário (opcional).
             name: Novo nome completo (opcional).
-            street: Novo logradouro (opcional).
-            number: Novo número do endereço (opcional).
-            zip_code: Novo CEP (opcional).
-            district: Novo bairro (opcional).
-            city: Nova cidade (opcional).
-            state: Novo estado (opcional).
-            country: Novo país (opcional).
+            phone: Novo telefone (opcional).
+            birth_date: Nova data de nascimento (opcional).
+            address: Novo endereço completo como value object (opcional).
             user_id: ID do usuário que está realizando a atualização (opcional).
         """
         self._operation_type = OperationType.UPDATE
@@ -168,13 +183,22 @@ class User(Aggregate, UserSecurity):
         self._track_change(old_data, new_data, "admin", admin)
         self._track_change(old_data, new_data, "is_owner", is_owner)
         self._track_change(old_data, new_data, "name", name)
-        self._track_change(old_data, new_data, "street", street)
-        self._track_change(old_data, new_data, "number", number)
-        self._track_change(old_data, new_data, "zip_code", zip_code)
-        self._track_change(old_data, new_data, "district", district)
-        self._track_change(old_data, new_data, "city", city)
-        self._track_change(old_data, new_data, "state", state)
-        self._track_change(old_data, new_data, "country", country)
+        self._track_change(old_data, new_data, "phone", phone)
+        self._track_change(
+            old_data, new_data, "birth_date", str(birth_date) if birth_date else None
+        )
+
+        if address is not None:
+            old_data["address"] = self.address.to_dict()
+            new_data["address"] = address.to_dict()
+            self.street = address.street
+            self.number = address.number
+            self.zip_code = address.zip_code
+            self.district = address.district
+            self.city = address.city
+            self.state = address.state
+            self.country = address.country
+            self.complement = address.complement
 
         if password is not None:
             new_data["password"] = AuditConstant.REDACTED_PASSWORD
