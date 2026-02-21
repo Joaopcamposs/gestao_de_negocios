@@ -45,13 +45,13 @@ async def post_legal_case(body: CreateLegalCaseSchema) -> UUID:
 
 
 @router.put("/case", status_code=status.HTTP_200_OK)
-async def put_legal_case(body: UpdateLegalCaseSchema) -> None:
+async def put_legal_case(case_number: str, body: UpdateLegalCaseSchema) -> None:
     """Atualiza um processo jurídico existente."""
     bus = bootstrap_lawyer(user=current_user.get())
 
     command = UpdateLegalCase(
         company=current_user.get().company,
-        case_number=body.case_number,
+        case_number=case_number,
         new_client_name=body.new_client_name,
         new_description=body.new_description,
         new_status=body.new_status,

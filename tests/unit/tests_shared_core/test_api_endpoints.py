@@ -84,8 +84,8 @@ class TestCompanyAPI:
         mock_bus = AsyncMock()
         mock_bootstrap.return_value = mock_bus
 
-        body = UpdateCompanySchema(legal_name="Old", new_legal_name="New")
-        await put_company(body)
+        body = UpdateCompanySchema(new_legal_name="New")
+        await put_company("Old", body)
         mock_bus.handle.assert_awaited_once()
 
     @patch("shared_core.entrypoints.api.company.view_company", new_callable=AsyncMock)
@@ -164,8 +164,8 @@ class TestUserAPI:
         mock_bus = AsyncMock()
         mock_bootstrap.return_value = mock_bus
 
-        body = UpdateUserSchema(email="old@test.com", new_name="New Name")
-        await put_user(body)
+        body = UpdateUserSchema(new_name="New Name")
+        await put_user("old@test.com", body)
         mock_bus.handle.assert_awaited_once()
 
     @patch("shared_core.entrypoints.api.user.view_user", new_callable=AsyncMock)

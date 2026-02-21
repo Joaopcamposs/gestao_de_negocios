@@ -61,8 +61,8 @@ class TestLawyerLegalCaseAPI:
         mock_bus = AsyncMock()
         mock_bootstrap.return_value = mock_bus
 
-        body = UpdateLegalCaseSchema(case_number="0001", new_client_name="New Client")
-        await put_legal_case(body)
+        body = UpdateLegalCaseSchema(new_client_name="New Client")
+        await put_legal_case("0001", body)
         mock_bus.handle.assert_awaited_once()
 
     @patch(

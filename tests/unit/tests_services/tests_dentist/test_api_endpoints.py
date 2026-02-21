@@ -54,8 +54,8 @@ class TestDentistPatientAPI:
         mock_bus = AsyncMock()
         mock_bootstrap.return_value = mock_bus
 
-        body = UpdatePatientSchema(cpf="12345678901", new_name="New")
-        await put_patient(body)
+        body = UpdatePatientSchema(new_name="New")
+        await put_patient("12345678901", body)
         mock_bus.handle.assert_awaited_once()
 
     @patch(
