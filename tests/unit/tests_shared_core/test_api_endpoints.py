@@ -394,12 +394,15 @@ class TestAuditLogAPI:
         self, mock_ctx, MockUoW, mock_view
     ) -> None:
         """Verifica que GET /audit_log com filtros funciona."""
+        from shared_core.domain.value_objects.enums import EntityType
         from shared_core.entrypoints.api.audit_log import get_audit_logs
 
         mock_ctx.get.return_value = _make_mock_user()
         mock_view.return_value = []
 
-        result = await get_audit_logs(entity_type="Company", entity_id=_COMPANY_ID)
+        result = await get_audit_logs(
+            entity_type=EntityType.COMPANY, entity_id=_COMPANY_ID
+        )
         assert result == []
 
 
