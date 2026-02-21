@@ -15,12 +15,14 @@ from shared_core.bootstrap import bootstrap
 from shared_core.consts import SERVICE_TYPE
 from messagebus.unity_of_work import UnitOfWork
 
-router = APIRouter(
+credit_card_router = APIRouter(
     prefix="/v1", tags=["CreditCards"], dependencies=[Depends(get_current_user)]
 )
 
 
-@router.post("/credit-card", response_model=UUID, status_code=status.HTTP_201_CREATED)
+@credit_card_router.post(
+    "/credit-card", response_model=UUID, status_code=status.HTTP_201_CREATED
+)
 async def post_credit_card(body: CreateCreditCardSchema) -> UUID:
     """Adiciona um cartão de crédito ao usuário autenticado."""
     bus = bootstrap(user=current_user.get(), service_type=SERVICE_TYPE)
@@ -37,14 +39,16 @@ async def post_credit_card(body: CreateCreditCardSchema) -> UUID:
     return card_id
 
 
-@router.get("/credit-card", response_model=list[ReadCreditCardSchema])
+@credit_card_router.get("/credit-card", response_model=list[ReadCreditCardSchema])
 async def get_credit_cards() -> list[ReadCreditCardSchema]:
     """Lista os cartões de crédito do usuário autenticado."""
     uow = UnitOfWork(user=current_user.get(), service_type=SERVICE_TYPE)
     return await view_credit_cards(uow, user_id=current_user.get().id)
 
 
-@router.delete("/credit-card/{card_id}", status_code=status.HTTP_204_NO_CONTENT)
+@credit_card_router.delete(
+    "/credit-card/{card_id}", status_code=status.HTTP_204_NO_CONTENT
+)
 async def delete_credit_card(card_id: UUID) -> None:
     """Exclui um cartão de crédito pelo ID."""
     bus = bootstrap(user=current_user.get(), service_type=SERVICE_TYPE)

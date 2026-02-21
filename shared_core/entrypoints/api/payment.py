@@ -17,12 +17,12 @@ from shared_core.bootstrap import bootstrap
 from shared_core.consts import SERVICE_TYPE
 from messagebus.unity_of_work import UnitOfWork
 
-router = APIRouter(
+payment_router = APIRouter(
     prefix="/v1", tags=["Payments"], dependencies=[Depends(get_current_user)]
 )
 
 
-@router.post("/payment", response_model=UUID, status_code=status.HTTP_201_CREATED)
+@payment_router.post("/payment", response_model=UUID, status_code=status.HTTP_201_CREATED)
 async def post_payment(body: CreatePaymentSchema) -> UUID:
     """Registra um novo pagamento para uma empresa."""
     bus = bootstrap(user=current_user.get(), service_type=SERVICE_TYPE)
@@ -36,7 +36,7 @@ async def post_payment(body: CreatePaymentSchema) -> UUID:
     return payment_id
 
 
-@router.get("/payment", response_model=list[ReadPaymentSchema])
+@payment_router.get("/payment", response_model=list[ReadPaymentSchema])
 async def get_payments(company: UUID | None = None) -> list[ReadPaymentSchema]:
     """Lista pagamentos. Se company for informado, filtra pela empresa."""
     target_company = company or current_user.get().company
@@ -44,21 +44,21 @@ async def get_payments(company: UUID | None = None) -> list[ReadPaymentSchema]:
     return await view_payments(uow, company=target_company)
 
 
-@router.patch("/payment/{payment_id}/paid", status_code=status.HTTP_200_OK)
+@payment_router.patch("/payment/{payment_id}/paid", status_code=status.HTTP_200_OK)
 async def patch_payment_paid(payment_id: UUID) -> None:
     """Registra um pagamento como realizado."""
     bus = bootstrap(user=current_user.get(), service_type=SERVICE_TYPE)
     await bus.handle(MarkPaymentAsPaid(payment_id=payment_id))
 
 
-@router.patch("/payment/{payment_id}/overdue", status_code=status.HTTP_200_OK)
+@payment_router.patch("/payment/{payment_id}/overdue", status_code=status.HTTP_200_OK)
 async def patch_payment_overdue(payment_id: UUID) -> None:
     """Marca um pagamento como em atraso."""
     bus = bootstrap(user=current_user.get(), service_type=SERVICE_TYPE)
     await bus.handle(MarkPaymentAsOverdue(payment_id=payment_id))
 
 
-@router.post("/payment/check-overdue", status_code=status.HTTP_200_OK)
+@payment_router.post("/payment/check-overdue", status_code=status.HTTP_200_OK)
 async def post_check_overdue() -> list[UUID]:
     """Verifica e inativa empresas com atraso de pagamento superior a 30 dias."""
     bus = bootstrap(user=current_user.get(), service_type=SERVICE_TYPE)
