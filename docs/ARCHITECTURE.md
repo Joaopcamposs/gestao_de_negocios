@@ -190,6 +190,142 @@ docker-compose.lawyer.yml    → Lawyer API (porta 8002, rede externa gestao_de_
 - **Testes sempre** — unitários + integração para cada contexto.
 
 
+---
+
+## Domínio: User
+
+### Campos do Agregado User
+
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `id` | UUID | ✅ | Identificador único (uuid7) |
+| `company` | UUID | ✅ | Empresa associada |
+| `email` | str | ✅ | Email de acesso |
+| `cpf` | str | ✅ | CPF do usuário |
+| `name` | str | ✅ | Nome completo |
+| `phone` | str | ✅ | Telefone de contato |
+| `street` | str | ✅ | Logradouro (parte do endereço) |
+| `number` | str | ✅ | Número do imóvel |
+| `zip_code` | str | ✅ | CEP |
+| `district` | str | ✅ | Bairro |
+| `city` | str | ✅ | Cidade |
+| `state` | str | ✅ | Estado |
+| `country` | str | ✅ | País |
+| `complement` | str | ❌ | Complemento (apto, sala, etc.) |
+| `birth_date` | date | ❌ | Data de nascimento |
+| `admin` | bool | ✅ | Se é administrador |
+| `is_owner` | bool | ❌ | Se é proprietário da empresa |
+
+### Value Object: Address
+
+`shared_core/domain/value_objects/address.py`
+
+Objeto de valor imutável (`frozen=True`) que encapsula o endereço completo. O agregado `User` armazena os campos de endereço de forma plana (para compatibilidade com ORM) e expõe o endereço via propriedade:
+
+```python
+user.address  # → Address(street, number, zip_code, district, city, state, country, complement)
+```
+
+Tanto `create_aggregate()` quanto `update()` aceitam um objeto `Address`:
+
+```python
+address = Address(street="Av. Paulista", number="1000", zip_code="01310100",
+                  district="Bela Vista", city="São Paulo", state="SP", country="Brasil",
+                  complement="Apto 42")
+
+user = User.create_aggregate(..., address=address)
+user.update(address=new_address)
+```
+
+---
+
+## Adapters: Billing (Cobrança de Assinatura)
+
+### Estrutura
+
+```
+shared_core/adapters/billing/
+    abstract_billing.py   # ABC com métodos abstratos
+    fake_billing.py       # Implementação fake para testes
+```
+
+### AbstractBillingService
+
+Interface em `shared_core/adapters/billing/abstract_billing.py` com os métodos:
+
+| Método | Descrição |
+|--------|-----------|
+| `create_customer(company_id, email, name)` | Cria cliente no provedor externo |
+| `create_subscription(customer_id, price_id)` | Cria assinatura recorrente |
+| `cancel_subscription(subscription_id)` | Cancela assinatura |
+| `charge_now(customer_id, amount_cents, currency, description)` | Cobrança avulsa imediata |
+| `get_subscription_status(subscription_id)` | Consulta status da assinatura |
+
+**Implementação real sugerida**: [Stripe](https://stripe.com/docs/api)
+- Instalar: `pip install stripe`
+- Variável de ambiente: `STRIPE_API_KEY`
+- Usar: `stripe.Customer`, `stripe.Subscription`, `stripe.PaymentIntent`
+
+### FakeBillingService
+
+Implementação em `shared_core/adapters/billing/fake_billing.py` para testes:
+- Não realiza cobranças reais
+- Armazena operações em `self.customers`, `self.subscriptions`, `self.charges`, `self.cancelled_subscriptions`
+- Retorna respostas de sucesso simuladas com IDs `fake_cus_*`, `fake_sub_*`, `fake_ch_*`
+
+```python
+billing = FakeBillingService()
+customer = await billing.create_customer(company_id, "email@test.com", "Empresa")
+result = await billing.create_subscription(customer.external_id, "price_monthly")
+assert result.status == "active"
+assert len(billing.subscriptions) == 1
+```
+
+---
+
+## Adapters: Email (Envio de Emails)
+
+### Estrutura
+
+```
+shared_core/adapters/email/
+    abstract_email.py   # ABC com métodos abstratos
+    fake_email.py       # Implementação fake para testes
+```
+
+### AbstractEmailService
+
+Interface em `shared_core/adapters/email/abstract_email.py` com os métodos:
+
+| Método | Descrição |
+|--------|-----------|
+| `send(message: EmailMessage)` | Envia email genérico |
+| `send_welcome(to, name)` | Email de boas-vindas |
+| `send_payment_overdue(to, company_name, due_date, amount)` | Aviso de pagamento em atraso |
+| `send_account_deactivated(to, company_name)` | Notificação de conta suspensa |
+| `send_password_reset(to, reset_token)` | Redefinição de senha |
+
+**Implementação real sugerida**: [SendGrid](https://docs.sendgrid.com/api-reference/mail-send/mail-send)
+- Instalar: `pip install sendgrid`
+- Variável de ambiente: `SENDGRID_API_KEY`
+- Alternativas: Amazon SES (`boto3`), Mailgun, Resend
+
+### FakeEmailService
+
+Implementação em `shared_core/adapters/email/fake_email.py` para testes:
+- Não envia emails reais
+- Armazena todas as mensagens em `self.sent: list[EmailMessage]`
+- Retorna `EmailResult(success=True, message_id="fake_msg_*")`
+
+```python
+email_svc = FakeEmailService()
+await email_svc.send_welcome("user@test.com", "João")
+assert len(email_svc.sent) == 1
+assert email_svc.sent[0].subject == "Bem-vindo ao sistema de gestão!"
+```
+
+---
+
 ## Melhorias
 
 ## Otimizações aplicadas

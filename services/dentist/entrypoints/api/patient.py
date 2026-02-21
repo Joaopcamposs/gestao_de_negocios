@@ -44,13 +44,13 @@ async def post_patient(body: CreatePatientSchema) -> UUID:
 
 
 @router.put("/patient", status_code=status.HTTP_200_OK)
-async def put_patient(body: UpdatePatientSchema) -> None:
+async def put_patient(cpf: str, body: UpdatePatientSchema) -> None:
     """Atualiza um paciente existente."""
     bus = bootstrap_dentist(user=current_user.get())
 
     command = UpdatePatient(
         company=current_user.get().company,
-        cpf=body.cpf,
+        cpf=cpf,
         new_name=body.new_name,
         new_phone=body.new_phone,
         new_birth_date=body.new_birth_date,

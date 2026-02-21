@@ -28,9 +28,6 @@ jobs:
       - name: Verificar formatação (ruff format)
         run: uv run ruff format --check .
 
-      - name: Auto-fix com ruff
-        run: uv run ruff check . --fix
-
       - name: Verificar lint (ruff check)
         run: uv run ruff check .
 
@@ -39,15 +36,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TEST_ENV: "true"
-      AES_KEY: "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE="
-      SECRET_KEY: "test_secret_key_for_jwt_with_32_bytes_length"
-      ALGORITHM: "HS256"
-      ACCESS_TOKEN_EXPIRE_MINUTES: "60"
-      FIRST_USER_CPF: "00000000000"
-      FIRST_USER_PASSWORD: "admin_test_password"
-      ADMIN_USER_PREFIX: "admin"
-      FIRST_COMPANY_ID: ""
-      FIRST_USER_EMAIL: "admin@test.com"
 
     steps:
       - uses: actions/checkout@v4

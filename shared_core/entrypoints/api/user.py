@@ -33,24 +33,32 @@ async def post_user(body: CreateUserSchema) -> UUID:
         email=body.email,
         cpf=body.cpf,
         password=body.password,
+        name=body.name,
+        phone=body.phone,
+        address=body.address.to_value_object(),
         active=body.active,
         admin=body.admin,
+        birth_date=body.birth_date,
     )
     user_id: UUID = await bus.handle(command)
     return user_id
 
 
 @router.put("/user", status_code=status.HTTP_200_OK)
-async def put_user(body: UpdateUserSchema) -> None:
+async def put_user(email: str, body: UpdateUserSchema) -> None:
     """Atualiza um usuário existente."""
     bus = bootstrap(user=current_user.get(), service_type=SERVICE_TYPE)
 
     command = UpdateUser(
-        email=body.email,
+        email=email,
         new_email=body.new_email,
         new_password=body.new_password,
         new_active=body.new_active,
         new_admin=body.new_admin,
+        new_name=body.new_name,
+        new_phone=body.new_phone,
+        new_birth_date=body.new_birth_date,
+        new_address=body.new_address.to_value_object() if body.new_address else None,
     )
     await bus.handle(command)
 

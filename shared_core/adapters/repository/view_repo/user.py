@@ -1,5 +1,6 @@
 """Módulo do repositório de consulta de User."""
 
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
@@ -12,6 +13,45 @@ from messagebus.entities import ViewRepository
 
 class UserViewRepo(ViewRepository):
     """Repositório de consulta para User."""
+
+    @staticmethod
+    def _build_entity(row: Any) -> User:
+        """
+        Constrói uma entidade User de leitura a partir de uma linha ORM.
+
+        Args:
+            row: Linha mapeada pelo SQLAlchemy.
+
+        Returns:
+            Entidade User de leitura.
+        """
+        return User(
+            id=row.id,
+            company=row.company,
+            email=row.email,
+            cpf=row.cpf,
+            name=row.name,
+            phone=row.phone,
+            street=row.street,
+            number=row.number,
+            zip_code=row.zip_code,
+            complement=row.complement,
+            district=row.district,
+            city=row.city,
+            state=row.state,
+            country=row.country,
+            active=row.active,
+            admin=row.admin,
+            is_owner=row.is_owner,
+            birth_date=row.birth_date,
+            _password_hash=row.password_hash,
+            deleted_at=row.deleted_at,
+            deleted_by=row.deleted_by,
+            created_at=row.created_at,
+            created_by=row.created_by,
+            updated_at=row.updated_at,
+            updated_by=row.updated_by,
+        )
 
     async def get_by_email(
         self, email: str, include_deleted: bool = False
@@ -27,32 +67,11 @@ class UserViewRepo(ViewRepository):
             Entidade User ou None se não encontrado.
         """
         async with self.session as session:
-            query = select(UserAggregate).where(
-                UserAggregate.email == email,
-            )
+            query = select(UserAggregate).where(UserAggregate.email == email)
             if not include_deleted:
                 query = query.where(UserAggregate.deleted_at.is_(None))
-
-            user = (await session.execute(query)).scalar_one_or_none()
-            if not user:
-                return None
-
-            entity = User(
-                id=user.id,
-                company=user.company,
-                email=user.email,
-                cpf=user.cpf,
-                active=user.active,
-                admin=user.admin,
-                deleted_at=user.deleted_at,
-                deleted_by=user.deleted_by,
-                created_at=user.created_at,
-                created_by=user.created_by,
-                updated_at=user.updated_at,
-                updated_by=user.updated_by,
-            )
-
-        return entity
+            row = (await session.execute(query)).scalar_one_or_none()
+        return self._build_entity(row) if row else None
 
     async def get_by_id(self, id: UUID) -> User | None:
         """
@@ -65,32 +84,15 @@ class UserViewRepo(ViewRepository):
             Entidade User ou None se não encontrado.
         """
         async with self.session as session:
-            query = select(UserAggregate).where(
-                UserAggregate.id == id,
-                UserAggregate.deleted_at.is_(None),
-            )
-
-            user = (await session.execute(query)).scalar_one_or_none()
-            if not user:
-                return None
-
-            entity = User(
-                id=user.id,
-                company=user.company,
-                email=user.email,
-                cpf=user.cpf,
-                active=user.active,
-                admin=user.admin,
-                deleted_at=user.deleted_at,
-                deleted_by=user.deleted_by,
-                created_at=user.created_at,
-                created_by=user.created_by,
-                updated_at=user.updated_at,
-                updated_by=user.updated_by,
-                _password_hash=user.password_hash,
-            )
-
-        return entity
+            row = (
+                await session.execute(
+                    select(UserAggregate).where(
+                        UserAggregate.id == id,
+                        UserAggregate.deleted_at.is_(None),
+                    )
+                )
+            ).scalar_one_or_none()
+        return self._build_entity(row) if row else None
 
     async def get_all(self, include_deleted: bool = False) -> list[User]:
         """
@@ -103,31 +105,11 @@ class UserViewRepo(ViewRepository):
             Lista de entidades User.
         """
         async with self.session as session:
-            query = select(UserAggregate).where()
+            query = select(UserAggregate)
             if not include_deleted:
                 query = query.where(UserAggregate.deleted_at.is_(None))
-
-            users = (await session.execute(query)).scalars()
-            if not users:
-                return []
-
-            return [
-                User(
-                    id=user.id,
-                    company=user.company,
-                    email=user.email,
-                    cpf=user.cpf,
-                    active=user.active,
-                    admin=user.admin,
-                    deleted_at=user.deleted_at,
-                    deleted_by=user.deleted_by,
-                    created_at=user.created_at,
-                    created_by=user.created_by,
-                    updated_at=user.updated_at,
-                    updated_by=user.updated_by,
-                )
-                for user in users
-            ]
+            rows = (await session.execute(query)).scalars().all()
+        return [self._build_entity(row) for row in rows]
 
     async def get_public_user_by_email(self, email: str) -> PublicUser | None:
         """

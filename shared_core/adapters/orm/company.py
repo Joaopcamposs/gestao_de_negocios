@@ -16,6 +16,8 @@ company = Table(
     Column("cpf", String(14), nullable=False),
     Column("cnpj", String(18), nullable=True),
     Column("active", Boolean, nullable=False, default=True),
+    Column("payment_up_to_date", Boolean, nullable=False, default=True),
+    Column("last_payment_date", DateTime(timezone=True), nullable=True),
     Column("created_at", DateTime(timezone=True), nullable=True),
     Column("created_by", UUID, nullable=True),
     Column("updated_at", DateTime(timezone=True), nullable=True),

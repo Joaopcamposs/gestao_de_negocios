@@ -22,7 +22,6 @@ class CreateLegalCaseSchema(BaseModel):
 class UpdateLegalCaseSchema(BaseModel):
     """Schema para atualização de processo jurídico."""
 
-    case_number: str
     new_client_name: str | None = None
     new_description: str | None = None
     new_status: str | None = None

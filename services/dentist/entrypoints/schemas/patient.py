@@ -21,7 +21,6 @@ class CreatePatientSchema(BaseModel):
 class UpdatePatientSchema(BaseModel):
     """Schema para atualização de paciente."""
 
-    cpf: str
     new_name: str | None = None
     new_phone: str | None = None
     new_birth_date: date | None = None

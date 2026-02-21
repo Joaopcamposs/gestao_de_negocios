@@ -1,5 +1,6 @@
 """Módulo de schemas de entrada/saída para Company."""
 
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -23,7 +24,6 @@ class CreateCompanySchema(BaseModel):
 class UpdateCompanySchema(BaseModel):
     """Schema para atualização de empresa."""
 
-    legal_name: str
     new_legal_name: str | None = None
     new_trade_name: str | None = None
     new_responsible_name: str | None = None
@@ -42,3 +42,5 @@ class ReadCompanySchema(ReadAuditSchema):
     cpf: str
     cnpj: str | None = None
     active: bool
+    payment_up_to_date: bool = True
+    last_payment_date: datetime | None = None

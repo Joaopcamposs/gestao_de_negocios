@@ -26,3 +26,10 @@ class CompanyDeleted(AuditableEvent, Event):
     """Evento emitido quando uma empresa é excluída."""
 
     id: UUID
+
+
+@dataclass(kw_only=True)
+class CompanyPaymentStatusUpdated(AuditableEvent, Event):
+    """Evento emitido quando o status de pagamento de uma empresa é atualizado."""
+
+    id: UUID

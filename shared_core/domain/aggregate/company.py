@@ -5,11 +5,14 @@ from uuid import UUID
 
 import uuid7
 
+from datetime import datetime
+
 from shared_core.consts import ADMIN_USER_PREFIX
 from shared_core.domain.value_objects.enums import EntityType
 from shared_core.domain.events.company import (
     CompanyCreated,
     CompanyDeleted,
+    CompanyPaymentStatusUpdated,
     CompanyUpdated,
 )
 from shared_core.domain.events.user import (
@@ -31,6 +34,8 @@ class Company(Aggregate):
     cpf: str
     trade_name: str | None = None
     cnpj: str | None = None
+    payment_up_to_date: bool = True
+    last_payment_date: datetime | None = None
 
     _first_company_id: UUID | None = None
 
@@ -79,6 +84,7 @@ class Company(Aggregate):
             cpf=cpf,
             cnpj=cnpj,
             active=active,
+            payment_up_to_date=True,
             _first_company_id=_first_company_id,
         )
 
@@ -179,6 +185,58 @@ class Company(Aggregate):
                 entity_type=EntityType.COMPANY,
                 old_data=old_data,
                 new_data=new_data,
+            )
+        )
+
+    def update_payment_status(
+        self,
+        payment_up_to_date: bool,
+        last_payment_date: "datetime | None" = None,
+        user_id: UUID | None = None,
+    ) -> None:
+        """
+        Atualiza o status de pagamento da empresa e emite evento.
+
+        Args:
+            payment_up_to_date: Se True, pagamento está em dia; se False, está em atraso.
+            last_payment_date: Data do último pagamento realizado (opcional).
+            user_id: ID do usuário que está realizando a atualização (opcional).
+        """
+        self._operation_type = OperationType.UPDATE
+        self._set_update_audit(user_id)
+
+        old_data = {"payment_up_to_date": self.payment_up_to_date}
+        self.payment_up_to_date = payment_up_to_date
+        if last_payment_date is not None:
+            self.last_payment_date = last_payment_date
+        new_data = {"payment_up_to_date": self.payment_up_to_date}
+
+        self.add_event(
+            CompanyPaymentStatusUpdated(
+                id=self.id,
+                entity_type=EntityType.COMPANY,
+                old_data=old_data,
+                new_data=new_data,
+            )
+        )
+
+    def deactivate(self, user_id: UUID | None = None) -> None:
+        """
+        Inativa a empresa sem soft delete (para casos de atraso de pagamento).
+
+        Args:
+            user_id: ID do usuário que está realizando a inativação (opcional).
+        """
+        self._operation_type = OperationType.UPDATE
+        self._set_update_audit(user_id)
+        self.active = False
+
+        self.add_event(
+            CompanyUpdated(
+                id=self.id,
+                entity_type=EntityType.COMPANY,
+                old_data={"active": True},
+                new_data={"active": False},
             )
         )
 

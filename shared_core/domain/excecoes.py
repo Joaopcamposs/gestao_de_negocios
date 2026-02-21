@@ -22,6 +22,14 @@ class UserNotFound(HTTPException):
 
 
 @dataclass
+class UserInactiveException(HTTPException):
+    """Exceção lançada quando o usuário está inativo."""
+
+    status_code: int = 403
+    detail: str = "User is inactive"
+
+
+@dataclass
 class CompanyAlreadyRegistered(HTTPException):
     """Exceção lançada quando o nome da empresa já está cadastrado."""
 
@@ -43,3 +51,27 @@ class CredentialsException(HTTPException):
 
     status_code: int = 401
     detail: str = "Could not validate credentials"
+
+
+@dataclass
+class CreditCardNotFound(HTTPException):
+    """Exceção lançada quando o cartão de crédito não é encontrado."""
+
+    status_code: int = 404
+    detail: str = "Credit card not found"
+
+
+@dataclass
+class PaymentNotFound(HTTPException):
+    """Exceção lançada quando o pagamento não é encontrado."""
+
+    status_code: int = 404
+    detail: str = "Payment not found"
+
+
+@dataclass
+class CompanyPaymentOverdueException(HTTPException):
+    """Exceção lançada quando a empresa está com pagamento em atraso."""
+
+    status_code: int = 402
+    detail: str = "Company payment is overdue"
