@@ -20,10 +20,13 @@ async def _create_company_with_user(
     email: str = "user@authtest.com",
     password: str = "secret123",
     cpf: str = "12345678901",
-) -> UUID:
+) -> tuple[UUID, str]:
     """Helper para criar empresa com should_create_user=True (fluxo real de cadastro)."""
-    bus = bootstrap(schema="public", raise_event_errors=True)
-    return await bus.handle(
+    import uuid7
+
+    schema = str(uuid7.create())
+    bus = bootstrap(schema=schema, create_schema=True, raise_event_errors=True)
+    company_id = await bus.handle(
         CreateCompany(
             legal_name=legal_name,
             responsible_name="Test User",
@@ -34,11 +37,12 @@ async def _create_company_with_user(
             should_create_user=True,
         )
     )
+    return company_id, schema
 
 
-async def _authenticate(email: str, password: str) -> Token | None:
+async def _authenticate(email: str, password: str, schema: str) -> Token | None:
     """Helper para autenticar um usuário."""
-    bus = bootstrap(schema="public", raise_event_errors=True)
+    bus = bootstrap(schema=schema, raise_event_errors=True)
     return await bus.handle(AuthenticateUser(email=email, password=password))
 
 
@@ -47,18 +51,18 @@ class TestCompanyWithUserCreation:
 
     async def test_create_company_with_user_returns_uuid(self, engine) -> None:
         """Verifica que criar empresa com should_create_user=True retorna UUID válido."""
-        company_id = await _create_company_with_user()
+        company_id, schema = await _create_company_with_user()
         assert isinstance(company_id, UUID)
 
     async def test_company_creation_enables_authentication(self, engine) -> None:
         """Verifica que após cadastro real, o login funciona imediatamente."""
-        await _create_company_with_user(
+        _, schema = await _create_company_with_user(
             legal_name="Login Ready Corp",
             email="ready@test.com",
             password="mypassword",
         )
 
-        token = await _authenticate("ready@test.com", "mypassword")
+        token = await _authenticate("ready@test.com", "mypassword", schema)
 
         assert isinstance(token, Token)
         assert token.token_type == "bearer"
@@ -67,7 +71,10 @@ class TestCompanyWithUserCreation:
         self, engine
     ) -> None:
         """Verifica que should_create_user=False não cria public_user para login."""
-        bus = bootstrap(schema="public", raise_event_errors=True)
+        import uuid7
+
+        schema = str(uuid7.create())
+        bus = bootstrap(schema=schema, create_schema=True, raise_event_errors=True)
         await bus.handle(
             CreateCompany(
                 legal_name="No User Corp",
@@ -80,7 +87,7 @@ class TestCompanyWithUserCreation:
             )
         )
 
-        result = await _authenticate("nouser@test.com", "secret123")
+        result = await _authenticate("nouser@test.com", "secret123", schema)
         assert result is None
 
 
@@ -89,13 +96,13 @@ class TestAuthenticateUser:
 
     async def test_authenticate_valid_credentials_returns_token(self, engine) -> None:
         """Verifica que credenciais válidas retornam Token com access_token."""
-        await _create_company_with_user(
+        _, schema = await _create_company_with_user(
             legal_name="Login Corp",
             email="login@test.com",
             password="correct_password",
         )
 
-        token = await _authenticate("login@test.com", "correct_password")
+        token = await _authenticate("login@test.com", "correct_password", schema)
 
         assert isinstance(token, Token)
         assert token.token_type == "bearer"
@@ -103,31 +110,31 @@ class TestAuthenticateUser:
 
     async def test_authenticate_wrong_password_returns_none(self, engine) -> None:
         """Verifica que senha errada retorna None."""
-        await _create_company_with_user(
+        _, schema = await _create_company_with_user(
             legal_name="Wrong Pwd Corp",
             email="wrongpwd@test.com",
             password="correct_password",
         )
 
-        result = await _authenticate("wrongpwd@test.com", "wrong_password")
+        result = await _authenticate("wrongpwd@test.com", "wrong_password", schema)
 
         assert result is None
 
     async def test_authenticate_nonexistent_email_returns_none(self, engine) -> None:
         """Verifica que email inexistente retorna None."""
-        result = await _authenticate("ghost@test.com", "any_password")
+        result = await _authenticate("ghost@test.com", "any_password", "fake_schema")
 
         assert result is None
 
     async def test_authenticate_case_insensitive_email(self, engine) -> None:
         """Verifica que a busca por email é case-insensitive (via hash)."""
-        await _create_company_with_user(
+        _, schema = await _create_company_with_user(
             legal_name="Case Corp",
             email="CaseTest@Example.com",
             password="secret123",
         )
 
-        token = await _authenticate("casetest@example.com", "secret123")
+        token = await _authenticate("casetest@example.com", "secret123", schema)
 
         assert isinstance(token, Token)
 
@@ -137,39 +144,39 @@ class TestTokenValidation:
 
     async def test_token_contains_correct_email(self, engine) -> None:
         """Verifica que o payload do token contém o email correto."""
-        await _create_company_with_user(
+        _, schema = await _create_company_with_user(
             legal_name="Token Email Corp",
             email="tokenemail@test.com",
             password="secret123",
         )
 
-        token = await _authenticate("tokenemail@test.com", "secret123")
+        token = await _authenticate("tokenemail@test.com", "secret123", schema)
         payload = jwt.decode(token.access_token, SECRET_KEY, algorithms=[ALGORITHM])
 
         assert payload["email"] == "tokenemail@test.com"
 
     async def test_token_contains_correct_company_id(self, engine) -> None:
         """Verifica que o payload do token contém o id_empresa correto."""
-        company_id = await _create_company_with_user(
+        company_id, schema = await _create_company_with_user(
             legal_name="Token Co Corp",
             email="tokenco@test.com",
             password="secret123",
         )
 
-        token = await _authenticate("tokenco@test.com", "secret123")
+        token = await _authenticate("tokenco@test.com", "secret123", schema)
         payload = jwt.decode(token.access_token, SECRET_KEY, algorithms=[ALGORITHM])
 
         assert payload["id_empresa"] == str(company_id)
 
     async def test_token_has_future_utc_expiration(self, engine) -> None:
         """Teste de regressão: exp deve estar no futuro em UTC (bug de timezone corrigido)."""
-        await _create_company_with_user(
+        _, schema = await _create_company_with_user(
             legal_name="Token Exp Corp",
             email="tokenexp@test.com",
             password="secret123",
         )
 
-        token = await _authenticate("tokenexp@test.com", "secret123")
+        token = await _authenticate("tokenexp@test.com", "secret123", schema)
         payload = jwt.decode(token.access_token, SECRET_KEY, algorithms=[ALGORITHM])
 
         exp = datetime.fromtimestamp(payload["exp"], tz=UTC)
@@ -178,13 +185,13 @@ class TestTokenValidation:
 
     async def test_token_is_not_immediately_expired(self, engine) -> None:
         """Teste de regressão: token recém-gerado não deve ser rejeitado por expiração."""
-        await _create_company_with_user(
+        _, schema = await _create_company_with_user(
             legal_name="Not Expired Corp",
             email="notexpired@test.com",
             password="secret123",
         )
 
-        token = await _authenticate("notexpired@test.com", "secret123")
+        token = await _authenticate("notexpired@test.com", "secret123", schema)
 
         payload = jwt.decode(token.access_token, SECRET_KEY, algorithms=[ALGORITHM])
         assert "email" in payload
@@ -192,13 +199,13 @@ class TestTokenValidation:
 
     async def test_token_decode_with_wrong_secret_fails(self, engine) -> None:
         """Verifica que decodificar com chave errada falha."""
-        await _create_company_with_user(
+        _, schema = await _create_company_with_user(
             legal_name="Wrong Key Corp",
             email="wrongkey@test.com",
             password="secret123",
         )
 
-        token = await _authenticate("wrongkey@test.com", "secret123")
+        token = await _authenticate("wrongkey@test.com", "secret123", schema)
 
         with pytest.raises(jwt.exceptions.InvalidSignatureError):
             jwt.decode(

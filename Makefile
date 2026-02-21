@@ -82,11 +82,11 @@ test-integration: test-env
 	$(MAKE) test-env-down
 
 test-dentist: test-env
-	python -m pytest tests/unit/test_services/test_dentist/ tests/integration/test_services/test_dentist/ -v; \
+	python -m pytest tests/unit/test_services/test_dentist/ tests/integration/test_services/test_dentist/ -vvv --tb=long --capture=no; \
 	$(MAKE) test-env-down
 
 test-lawyer: test-env
-	python -m pytest tests/unit/test_services/test_lawyer/ tests/integration/test_services/test_lawyer/ -v; \
+	python -m pytest tests/unit/test_services/test_lawyer/ tests/integration/test_services/test_lawyer/ -vvv --tb=long --capture=no; \
 	$(MAKE) test-env-down
 
 test-all: test-env

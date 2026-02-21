@@ -374,6 +374,7 @@ class TestInfraDatabaseFunctions:
                 "DB_USER": "docker_user",
                 "DB_PASSWORD": "docker_pass",
                 "DB_NAME": "docker_db",
+                "DB_PORT": "5432",
             },
             clear=False,
         ):
@@ -394,6 +395,7 @@ class TestInfraDatabaseFunctions:
                 "DB_USER": "prod_user",
                 "DB_PASSWORD": "prod_pass",
                 "DB_NAME": "prod_db",
+                "DB_PORT": "54322",
             },
             clear=False,
         ):
@@ -414,6 +416,7 @@ class TestInfraDatabaseFunctions:
                 "DB_USER": "user",
                 "DB_PASSWORD": "pass",
                 "DB_NAME": "postgres",
+                "DB_PORT": "5432",
             },
             clear=False,
         ):

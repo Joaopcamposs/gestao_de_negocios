@@ -15,10 +15,15 @@ from shared_core.domain.commands.payment import (
 from shared_core.domain.value_objects.enums import PaymentStatus
 
 
-async def _create_company(legal_name: str, email: str, cpf: str = "12345678901") -> UUID:
+async def _create_company(
+    legal_name: str, email: str, cpf: str = "12345678901"
+) -> tuple[UUID, str]:
     """Helper para criar empresa."""
-    bus = bootstrap(schema="public", raise_event_errors=True)
-    return await bus.handle(
+    import uuid7
+
+    schema = str(uuid7.create())
+    bus = bootstrap(schema=schema, create_schema=True, raise_event_errors=True)
+    company_id = await bus.handle(
         CreateCompany(
             legal_name=legal_name,
             responsible_name="Test User",
@@ -29,15 +34,17 @@ async def _create_company(legal_name: str, email: str, cpf: str = "12345678901")
             should_create_user=True,
         )
     )
+    return company_id, schema
 
 
 async def _create_payment(
     company_id: UUID,
+    schema: str,
     amount: float = 150.0,
     days_until_due: int = 30,
 ) -> UUID:
     """Helper para criar pagamento."""
-    bus = bootstrap(schema="public", raise_event_errors=True)
+    bus = bootstrap(schema=schema, raise_event_errors=True)
     return await bus.handle(
         CreatePayment(
             company=company_id,
@@ -52,8 +59,10 @@ class TestCreatePayment:
 
     async def test_create_payment_returns_uuid(self, engine) -> None:
         """Verifica que criar pagamento retorna UUID válido."""
-        company_id = await _create_company("Pay Create Corp", "paycreate@test.com")
-        payment_id = await _create_payment(company_id)
+        company_id, schema = await _create_company(
+            "Pay Create Corp", "paycreate@test.com"
+        )
+        payment_id = await _create_payment(company_id, schema)
 
         assert isinstance(payment_id, UUID)
 
@@ -62,10 +71,12 @@ class TestCreatePayment:
         from shared_core.adapters.repository.domain_repo.payment import PaymentDomainRepo
         from shared_core.domains import Domain
 
-        company_id = await _create_company("Pay Status Corp", "paystatus@test.com")
-        payment_id = await _create_payment(company_id)
+        company_id, schema = await _create_company(
+            "Pay Status Corp", "paystatus@test.com"
+        )
+        payment_id = await _create_payment(company_id, schema)
 
-        bus = bootstrap(schema="public", raise_event_errors=True)
+        bus = bootstrap(schema=schema, raise_event_errors=True)
         async with bus.uow(Domain.payment) as uow:
             repo: PaymentDomainRepo = uow.domain_repo
             payment = await repo.get_by_id(payment_id=payment_id)
@@ -75,10 +86,10 @@ class TestCreatePayment:
 
     async def test_create_multiple_payments_for_same_company(self, engine) -> None:
         """Verifica que uma empresa pode ter múltiplos pagamentos."""
-        company_id = await _create_company("Pay Multi Corp", "paymulti@test.com")
+        company_id, schema = await _create_company("Pay Multi Corp", "paymulti@test.com")
 
-        payment_id_1 = await _create_payment(company_id, amount=100.0)
-        payment_id_2 = await _create_payment(company_id, amount=200.0)
+        payment_id_1 = await _create_payment(company_id, schema, amount=100.0)
+        payment_id_2 = await _create_payment(company_id, schema, amount=200.0)
 
         assert payment_id_1 != payment_id_2
 
@@ -91,10 +102,10 @@ class TestMarkPaymentAsPaid:
         from shared_core.adapters.repository.domain_repo.payment import PaymentDomainRepo
         from shared_core.domains import Domain
 
-        company_id = await _create_company("Pay Paid Corp", "paypaid@test.com")
-        payment_id = await _create_payment(company_id)
+        company_id, schema = await _create_company("Pay Paid Corp", "paypaid@test.com")
+        payment_id = await _create_payment(company_id, schema)
 
-        bus = bootstrap(schema="public", raise_event_errors=True)
+        bus = bootstrap(schema=schema, raise_event_errors=True)
         await bus.handle(MarkPaymentAsPaid(payment_id=payment_id))
 
         async with bus.uow(Domain.payment) as uow:
@@ -111,10 +122,12 @@ class TestMarkPaymentAsPaid:
         from shared_core.adapters.repository.domain_repo.company import CompanyDomainRepo
         from shared_core.domains import Domain
 
-        company_id = await _create_company("Pay Co Paid Corp", "paycopaid@test.com")
-        payment_id = await _create_payment(company_id)
+        company_id, schema = await _create_company(
+            "Pay Co Paid Corp", "paycopaid@test.com"
+        )
+        payment_id = await _create_payment(company_id, schema)
 
-        bus = bootstrap(schema="public", raise_event_errors=True)
+        bus = bootstrap(schema=schema, raise_event_errors=True)
         await bus.handle(MarkPaymentAsPaid(payment_id=payment_id))
 
         async with bus.uow(Domain.company) as uow:
@@ -133,10 +146,12 @@ class TestMarkPaymentAsOverdue:
         from shared_core.adapters.repository.domain_repo.payment import PaymentDomainRepo
         from shared_core.domains import Domain
 
-        company_id = await _create_company("Pay Overdue Corp", "payoverdue@test.com")
-        payment_id = await _create_payment(company_id)
+        company_id, schema = await _create_company(
+            "Pay Overdue Corp", "payoverdue@test.com"
+        )
+        payment_id = await _create_payment(company_id, schema)
 
-        bus = bootstrap(schema="public", raise_event_errors=True)
+        bus = bootstrap(schema=schema, raise_event_errors=True)
         await bus.handle(MarkPaymentAsOverdue(payment_id=payment_id))
 
         async with bus.uow(Domain.payment) as uow:
@@ -150,10 +165,12 @@ class TestMarkPaymentAsOverdue:
         from shared_core.adapters.repository.domain_repo.company import CompanyDomainRepo
         from shared_core.domains import Domain
 
-        company_id = await _create_company("Pay Co Overdue Corp", "paycooverdue@test.com")
-        payment_id = await _create_payment(company_id)
+        company_id, schema = await _create_company(
+            "Pay Co Overdue Corp", "paycooverdue@test.com"
+        )
+        payment_id = await _create_payment(company_id, schema)
 
-        bus = bootstrap(schema="public", raise_event_errors=True)
+        bus = bootstrap(schema=schema, raise_event_errors=True)
         await bus.handle(MarkPaymentAsOverdue(payment_id=payment_id))
 
         async with bus.uow(Domain.company) as uow:
@@ -171,9 +188,9 @@ class TestCheckAndDeactivateOverdueCompanies:
         from shared_core.adapters.repository.domain_repo.company import CompanyDomainRepo
         from shared_core.domains import Domain
 
-        company_id = await _create_company("No Deact Corp", "nodeact@test.com")
+        company_id, schema = await _create_company("No Deact Corp", "nodeact@test.com")
 
-        bus = bootstrap(schema="public", raise_event_errors=True)
+        bus = bootstrap(schema=schema, raise_event_errors=True)
         deactivated = await bus.handle(CheckAndDeactivateOverdueCompanies())
 
         async with bus.uow(Domain.company) as uow:
@@ -185,7 +202,26 @@ class TestCheckAndDeactivateOverdueCompanies:
 
     async def test_check_and_deactivate_returns_list(self, engine) -> None:
         """Verifica que CheckAndDeactivateOverdueCompanies retorna uma lista."""
-        bus = bootstrap(schema="public", raise_event_errors=True)
+        import uuid7
+
+        schema = str(uuid7.create())
+        bus = bootstrap(schema=schema, create_schema=True, raise_event_errors=True)
+
+        # Criar uma empresa para garantir que as tabelas existam
+        from shared_core.domain.commands.company import CreateCompany
+
+        await bus.handle(
+            CreateCompany(
+                legal_name="Test Corp",
+                responsible_name="Test User",
+                active=True,
+                cpf="12345678901",
+                email="test@test.com",
+                password="secret123",
+                should_create_user=False,
+            )
+        )
+
         result = await bus.handle(CheckAndDeactivateOverdueCompanies())
 
         assert isinstance(result, list)
@@ -198,9 +234,9 @@ class TestPaymentAlertOnLogin:
         """Verifica que login sem atraso não gera alerta no token."""
         from shared_core.domain.commands.security import AuthenticateUser
 
-        await _create_company("Alert OK Corp", "alertok@test.com")
+        _, schema = await _create_company("Alert OK Corp", "alertok@test.com")
 
-        bus = bootstrap(schema="public", raise_event_errors=True)
+        bus = bootstrap(schema=schema, raise_event_errors=True)
         token = await bus.handle(
             AuthenticateUser(email="alertok@test.com", password="secret123")
         )
@@ -212,10 +248,12 @@ class TestPaymentAlertOnLogin:
         """Verifica que login com pagamento em atraso gera alerta no token."""
         from shared_core.domain.commands.security import AuthenticateUser
 
-        company_id = await _create_company("Alert Overdue Corp", "alertoverdue@test.com")
-        payment_id = await _create_payment(company_id)
+        company_id, schema = await _create_company(
+            "Alert Overdue Corp", "alertoverdue@test.com"
+        )
+        payment_id = await _create_payment(company_id, schema)
 
-        bus = bootstrap(schema="public", raise_event_errors=True)
+        bus = bootstrap(schema=schema, raise_event_errors=True)
         await bus.handle(MarkPaymentAsOverdue(payment_id=payment_id))
 
         token = await bus.handle(

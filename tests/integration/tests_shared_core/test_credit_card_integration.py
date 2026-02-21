@@ -22,10 +22,15 @@ _TEST_ADDRESS = Address(
 )
 
 
-async def _create_company(legal_name: str, email: str, cpf: str = "12345678901") -> UUID:
+async def _create_company(
+    legal_name: str, email: str, cpf: str = "12345678901"
+) -> tuple[UUID, str]:
     """Helper para criar empresa."""
-    bus = bootstrap(schema="public", raise_event_errors=True)
-    return await bus.handle(
+    import uuid7
+
+    schema = str(uuid7.create())
+    bus = bootstrap(schema=schema, create_schema=True, raise_event_errors=True)
+    company_id = await bus.handle(
         CreateCompany(
             legal_name=legal_name,
             responsible_name="Test User",
@@ -36,11 +41,12 @@ async def _create_company(legal_name: str, email: str, cpf: str = "12345678901")
             should_create_user=True,
         )
     )
+    return company_id, schema
 
 
-async def _create_user(company_id: UUID, email: str, cpf: str) -> UUID:
+async def _create_user(company_id: UUID, email: str, cpf: str, schema: str) -> UUID:
     """Helper para criar usuário."""
-    bus = bootstrap(schema="public", raise_event_errors=True)
+    bus = bootstrap(schema=schema, raise_event_errors=True)
     return await bus.handle(
         CreateUser(
             company=company_id,
@@ -56,9 +62,11 @@ async def _create_user(company_id: UUID, email: str, cpf: str) -> UUID:
     )
 
 
-async def _create_card(user_id: UUID, number: str = "4111111111111111") -> UUID:
+async def _create_card(
+    user_id: UUID, schema: str, number: str = "4111111111111111"
+) -> UUID:
     """Helper para criar cartão de crédito."""
-    bus = bootstrap(schema="public", raise_event_errors=True)
+    bus = bootstrap(schema=schema, raise_event_errors=True)
     return await bus.handle(
         CreateCreditCard(
             user_id=user_id,
@@ -76,20 +84,22 @@ class TestCreateCreditCard:
 
     async def test_create_credit_card_returns_uuid(self, engine) -> None:
         """Verifica que criar cartão retorna UUID válido."""
-        company_id = await _create_company("CC Create Corp", "cccreate@test.com")
-        user_id = await _create_user(company_id, "ccuser@test.com", "11122233344")
+        company_id, schema = await _create_company("CC Create Corp", "cccreate@test.com")
+        user_id = await _create_user(company_id, "ccuser@test.com", "11122233344", schema)
 
-        card_id = await _create_card(user_id)
+        card_id = await _create_card(user_id, schema)
 
         assert isinstance(card_id, UUID)
 
     async def test_create_multiple_cards_for_same_user(self, engine) -> None:
         """Verifica que um usuário pode ter múltiplos cartões."""
-        company_id = await _create_company("CC Multi Corp", "ccmulti@test.com")
-        user_id = await _create_user(company_id, "ccmultiuser@test.com", "22233344455")
+        company_id, schema = await _create_company("CC Multi Corp", "ccmulti@test.com")
+        user_id = await _create_user(
+            company_id, "ccmultiuser@test.com", "22233344455", schema
+        )
 
-        card_id_1 = await _create_card(user_id, number="4111111111111111")
-        card_id_2 = await _create_card(user_id, number="5555555555554444")
+        card_id_1 = await _create_card(user_id, schema, number="4111111111111111")
+        card_id_2 = await _create_card(user_id, schema, number="5555555555554444")
 
         assert card_id_1 != card_id_2
         assert isinstance(card_id_1, UUID)
@@ -102,11 +112,15 @@ class TestCreateCreditCard:
         )
         from shared_core.domains import Domain
 
-        company_id = await _create_company("CC Encrypt Corp", "ccencrypt@test.com")
-        user_id = await _create_user(company_id, "ccencryptuser@test.com", "33344455566")
-        card_id = await _create_card(user_id, number="4111111111111111")
+        company_id, schema = await _create_company(
+            "CC Encrypt Corp", "ccencrypt@test.com"
+        )
+        user_id = await _create_user(
+            company_id, "ccencryptuser@test.com", "33344455566", schema
+        )
+        card_id = await _create_card(user_id, schema, number="4111111111111111")
 
-        bus = bootstrap(schema="public", raise_event_errors=True)
+        bus = bootstrap(schema=schema, raise_event_errors=True)
         async with bus.uow(Domain.credit_card) as uow:
             repo: CreditCardDomainRepo = uow.domain_repo
             card = await repo.get_by_id(card_id=card_id)
@@ -126,11 +140,13 @@ class TestDeleteCreditCard:
         )
         from shared_core.domains import Domain
 
-        company_id = await _create_company("CC Delete Corp", "ccdelete@test.com")
-        user_id = await _create_user(company_id, "ccdeleteuser@test.com", "44455566677")
-        card_id = await _create_card(user_id)
+        company_id, schema = await _create_company("CC Delete Corp", "ccdelete@test.com")
+        user_id = await _create_user(
+            company_id, "ccdeleteuser@test.com", "44455566677", schema
+        )
+        card_id = await _create_card(user_id, schema)
 
-        bus = bootstrap(schema="public", raise_event_errors=True)
+        bus = bootstrap(schema=schema, raise_event_errors=True)
         await bus.handle(DeleteCreditCard(card_id=card_id))
 
         async with bus.uow(Domain.credit_card) as uow:

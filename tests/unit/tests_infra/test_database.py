@@ -73,6 +73,7 @@ class TestGetDatabaseUri:
                 "DB_USER": "user",
                 "DB_PASSWORD": "pass",
                 "DB_NAME": "test_db",
+                "DB_PORT": "5432",
             },
             clear=False,
         ):
@@ -92,6 +93,7 @@ class TestGetDatabaseUri:
                 "DB_USER": "user",
                 "DB_PASSWORD": "pass",
                 "DB_NAME": "mydb",
+                "DB_PORT": "5432",
             },
             clear=False,
         ):
@@ -107,11 +109,13 @@ class TestGetDatabaseUri:
             {
                 "TEST_ENV": "true",
                 "DB_NAME": "postgres",
+                "DB_PORT": "5432",
             },
             clear=False,
         ):
-            with pytest.raises(RuntimeError, match="TEST_ENV"):
-                get_database_uri()
+            with patch("infra.database.service_registry.DEFAULT_DB_NAME", "postgres"):
+                with pytest.raises(RuntimeError, match="TEST_ENV"):
+                    get_database_uri()
 
     def test_with_service_type(self) -> None:
         """Verifica que service_type é incluído na URI do banco."""
