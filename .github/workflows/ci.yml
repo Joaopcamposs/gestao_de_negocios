@@ -55,9 +55,7 @@ jobs:
         run: uv sync --group dev
 
       - name: Executar testes unitários
-        run: |
-          export $(cat .env.test | xargs)
-          uv run python -m pytest tests/unit/ -vvv --tb=long --capture=no
+        run: uv run python -m pytest tests/unit/ -vvv --tb=long --capture=no
 
   test-integration:
     name: Testes de Integração
@@ -93,6 +91,4 @@ jobs:
         run: uv sync --group dev
 
       - name: Executar testes de integração
-        run: |
-          export $(cat .env.test | xargs)
-          uv run python -m pytest tests/integration/ -vvv --tb=long --capture=no
+        run: uv run python -m pytest tests/integration/ -vvv --tb=long --capture=no

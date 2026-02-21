@@ -75,10 +75,10 @@ test-env-down:
 
 # ── Testes ────────────────────────────────────────────────────────
 test-unit:
-	python -m pytest tests/unit/ -v
+	python -m pytest tests/unit/ -v --tb=long --capture=no
 
 test-integration: test-env
-	python -m pytest tests/integration/ -v; \
+	python -m pytest tests/integration/ -v --tb=long --capture=no; \
 	$(MAKE) test-env-down
 
 test-dentist: test-env
@@ -90,7 +90,7 @@ test-lawyer: test-env
 	$(MAKE) test-env-down
 
 test-all: test-env
-	python -m pytest tests/ -v; \
+	python -m pytest tests/ -v --tb=long --capture=no; \
 	$(MAKE) test-env-down
 
 test-cov: test-env
