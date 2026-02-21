@@ -28,9 +28,6 @@ jobs:
       - name: Verificar formatação (ruff format)
         run: uv run ruff format --check .
 
-      - name: Auto-fix com ruff
-        run: uv run ruff check . --fix
-
       - name: Verificar lint (ruff check)
         run: uv run ruff check .
 
